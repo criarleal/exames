@@ -1129,6 +1129,21 @@
       .pacs-hud-shortcuts { display: none; }
       .pacs-stage img { max-width: 100%; max-height: 100%; }
       .risk-legend { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; font-size: .65rem; }
+
+      /* No celular, cada exame vira um cartão legível em vez de uma tabela lateral. */
+      .table-container.mobile-cards { overflow: visible; border: 0; box-shadow: none; background: transparent; }
+      .mobile-cards table { min-width: 0; width: 100%; border-collapse: separate; border-spacing: 0 .55rem; }
+      .mobile-cards thead { display: none; }
+      .mobile-cards tbody, .mobile-cards tr { display: block; width: 100%; }
+      .mobile-cards tr { padding: .7rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); box-shadow: 0 5px 16px rgba(0,0,0,.12); }
+      .mobile-cards td { display: grid; grid-template-columns: minmax(7.5rem, 42%) 1fr; gap: .55rem; align-items: start; padding: .36rem 0; border: 0; text-align: left; white-space: normal; }
+      .mobile-cards td::before { content: attr(data-label); color: var(--text-dim); font-size: .68rem; font-weight: 700; }
+      .mobile-cards td:first-child { display: block; padding: .1rem 0 .55rem; margin-bottom: .2rem; border-bottom: 1px solid var(--border); font-size: .86rem; }
+      .mobile-cards td:first-child::before { display: none; }
+      .mobile-cards td:first-child strong { display: block; }
+      .mobile-cards td[colspan] { display: block; text-align: left !important; }
+      .mobile-cards td[colspan]::before { display: none; }
+      #tableFullWrapper.mobile-cards { max-height: none !important; overflow: visible !important; }
     }
 
     @media print {
@@ -2395,7 +2410,30 @@ Prontuário: removido | Última Coleta: 09/11/2026
         tr.innerHTML = cellsHtml;
         tbody.appendChild(tr);
       });
+      decorateMobileTables();
     }
+
+    function decorateMobileTables() {
+      document.querySelectorAll('.table-container table').forEach(table => {
+        const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+        table.querySelectorAll('tbody tr').forEach(row => {
+          Array.from(row.children).forEach((cell, index) => {
+            if (!cell.hasAttribute('colspan') && headers[index]) cell.dataset.label = headers[index];
+          });
+        });
+      });
+    }
+
+    function syncMobileTableCards() {
+      const isMobile = window.matchMedia('(max-width: 720px)').matches;
+      document.querySelectorAll('#tableFocusWrapper, #tableFullWrapper').forEach(wrapper => {
+        wrapper.classList.toggle('mobile-cards', isMobile);
+      });
+      if (isMobile) decorateMobileTables();
+    }
+
+    window.addEventListener('resize', syncMobileTableCards);
+    syncMobileTableCards();
 
     // ==========================================
     // GRÁFICOS INTERATIVOS (CHART.JS)
