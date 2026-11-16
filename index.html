@@ -1,0 +1,2516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dossiê Clínico &amp; Radiológico</title>
+  
+  <!-- Chart.js para Curvas Clínicas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <style>
+    /* ==========================================================================
+       SISTEMA DE CORES & TEMAS (DARK / LIGHT)
+       ========================================================================== */
+    :root {
+      --bg: #090d16;
+      --surface: #101726;
+      --surface-sub: #172033;
+      --border: #1e293b;
+      --border-sub: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --accent-glow: rgba(2, 132, 199, 0.25);
+      --alert: #ef4444;
+      --alert-bg: rgba(239, 68, 68, 0.1);
+      --alert-border: rgba(239, 68, 68, 0.3);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --pacs-black: #000000;
+      --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    }
+
+    body.light-theme {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-sub: #f1f5f9;
+      --border: #e2e8f0;
+      --border-sub: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --accent-glow: rgba(2, 132, 199, 0.15);
+      --alert: #dc2626;
+      --alert-bg: #fef2f2;
+      --alert-border: #fca5a5;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --pacs-black: #050811;
+      --shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Refinamento visual: interface clínica, calma e orientada à leitura */
+    :root {
+      --bg: #07111f;
+      --surface: #0d1b2e;
+      --surface-sub: #12243a;
+      --border: rgba(148, 163, 184, 0.16);
+      --border-sub: rgba(148, 163, 184, 0.28);
+      --text-muted: #f1f5f9;
+      --text-dim: #dbeafe;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --accent-glow: rgba(56, 189, 248, 0.18);
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+    }
+
+    body.light-theme {
+      --bg: #eef5f8;
+      --surface: #ffffff;
+      --surface-sub: #f3f8fa;
+      --border: #d9e5ea;
+      --border-sub: #c3d5dc;
+      --accent: #087ea4;
+      --accent-hover: #06647f;
+      --accent-glow: rgba(8, 126, 164, 0.12);
+      --text-muted: #475569;
+      --text-dim: #64748b;
+      --shadow: 0 16px 38px rgba(22, 55, 71, 0.08);
+    }
+
+    /* Links precisam se distinguir do azul usado nos botões e destaques. */
+    a {
+      color: #fbbf24;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+      font-weight: 600;
+    }
+
+    a:hover, a:focus-visible {
+      color: #fde68a;
+      text-decoration-thickness: 2px;
+    }
+
+    body.light-theme a {
+      color: #075985;
+    }
+
+    body.light-theme a:hover, body.light-theme a:focus-visible {
+      color: #0c4a6e;
+    }
+
+    .pacs-toolbar [style*="color: #9ca3af"],
+    #pacsCounter, #pacsOverlaySub, #pacsOverlayDesc, #splitInfoA, #splitInfoB {
+      color: #f8fafc !important;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 8% 0%, rgba(56, 189, 248, 0.10), transparent 30rem),
+        radial-gradient(circle at 96% 6%, rgba(45, 212, 191, 0.08), transparent 24rem),
+        var(--bg);
+      font-size: 14.5px;
+    }
+
+    .container { max-width: 1440px; padding: 2rem clamp(1rem, 3vw, 3rem); }
+
+    .header {
+      position: relative;
+      overflow: hidden;
+      border-radius: 22px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.1rem;
+      background: linear-gradient(135deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 82%, #0ea5e9) 100%);
+      box-shadow: 0 22px 55px rgba(2, 132, 199, 0.12), var(--shadow);
+    }
+
+    .header::after {
+      content: "";
+      position: absolute; inset: auto -4rem -7rem auto;
+      width: 18rem; height: 18rem; border-radius: 50%;
+      background: radial-gradient(circle, rgba(56,189,248,.2), transparent 65%);
+      pointer-events: none;
+    }
+
+    .header-title { font-size: clamp(1.35rem, 2vw, 1.8rem); letter-spacing: -0.035em; }
+    .header-title-row, .header-meta, .header-actions { position: relative; z-index: 1; }
+    .header-meta { font-size: .86rem; gap: .7rem 1.3rem; }
+    .header-meta span { display: inline-flex; align-items: center; gap: .35rem; }
+
+    .pulse-alert { padding: .35rem .7rem; border-radius: 999px; letter-spacing: .02em; }
+    .btn, .btn-theme { border-radius: 10px; padding: .62rem .9rem; }
+    .btn { box-shadow: 0 8px 18px rgba(14,165,233,.18); }
+
+    .nav-tabs {
+      position: sticky; top: 0; z-index: 10;
+      gap: .25rem; padding: .35rem; margin: 0 0 1.5rem;
+      border: 1px solid var(--border); border-radius: 14px;
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      backdrop-filter: blur(14px); box-shadow: var(--shadow);
+    }
+    .nav-tab { border: 0; border-radius: 10px; padding: .78rem 1rem; }
+    .nav-tab.active { color: var(--text-main); background: var(--accent-glow); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 36%, transparent); }
+
+    .card {
+      border-radius: 16px; padding: 1.4rem; margin-bottom: 1.4rem;
+      box-shadow: var(--shadow);
+    }
+    .card-title { font-size: 1rem; letter-spacing: -.01em; }
+    .metric-card, .stat-card { border-radius: 15px; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+    .metric-card:hover, .stat-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 48%, var(--border)); box-shadow: 0 14px 30px rgba(0,0,0,.16); }
+    .table-container { border-radius: 16px; box-shadow: var(--shadow); }
+    table thead th { position: sticky; top: 0; z-index: 1; backdrop-filter: blur(8px); }
+
+    @media (max-width: 720px) {
+      .container { padding: 1rem .75rem 2rem; }
+      .header { padding: 1.1rem; border-radius: 17px; }
+      .header-title-row { align-items: flex-start; flex-direction: column; gap: .55rem; }
+      .header-actions { width: 100%; }
+      .header-actions .btn, .header-actions .btn-theme { flex: 1; justify-content: center; }
+      .nav-tabs { top: .35rem; overflow-x: auto; }
+      .nav-tab { padding: .7rem .8rem; font-size: .8rem; }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    /* ==========================================================================
+       HEADER & BARRA SUPERIOR
+       ========================================================================== */
+    .header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .header-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .pulse-alert {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--alert-bg);
+      border: 1px solid var(--alert-border);
+      color: var(--alert);
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--alert);
+      box-shadow: 0 0 8px var(--alert);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+
+    .header-meta {
+      display: flex;
+      gap: 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.825rem;
+      margin-top: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .header-meta span strong {
+      color: var(--text-main);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Botões */
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: 1px solid var(--accent-hover);
+      border-radius: 6px;
+      padding: 0.5rem 0.9rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--surface-sub);
+      border-color: var(--border-sub);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .btn-theme {
+      background: var(--surface-sub);
+      border: 1px solid var(--border-sub);
+      color: var(--text-main);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* ==========================================================================
+       ABAS DE NAVEGAÇÃO
+       ========================================================================== */
+    .nav-tabs {
+      display: flex;
+      gap: 0.35rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      padding: 0.75rem 1.2rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-main);
+    }
+
+    .nav-tab.active {
+      color: #38bdf8;
+      border-bottom-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       CARDS & GRIDS
+       ========================================================================== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .metric-box {
+      background: var(--surface-sub);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.875rem 1rem;
+    }
+
+    .metric-label {
+      font-size: 0.725rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .metric-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .metric-sub {
+      font-size: 0.725rem;
+      color: var(--text-dim);
+      margin-top: 0.2rem;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.725rem;
+      font-weight: 600;
+    }
+
+    .badge-alert {
+      background: var(--alert-bg);
+      color: var(--alert);
+      border: 1px solid var(--alert-border);
+    }
+
+    .badge-warning {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-success {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-neutral {
+      background: var(--surface-sub);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    /* ==========================================================================
+       FERRAMENTAS UROLÓGICAS INTERATIVAS (RÉGUA DE RISCO & PSAD)
+       ========================================================================== */
+    .urology-tool-box {
+      background: var(--surface-sub);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    /* Régua Horizontal de Risco PSA Livre/Total */
+    .risk-gauge-container {
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    .risk-bar {
+      height: 18px;
+      border-radius: 9px;
+      background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #10b981 100%);
+      position: relative;
+      margin-bottom: 0.5rem;
+    }
+
+    .risk-marker {
+      position: absolute;
+      top: -6px;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 30px;
+      background: #ffffff;
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+      transition: left 0.3s ease;
+    }
+
+    .risk-marker::after {
+      content: '17,25%';
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0284c7;
+      color: #fff;
+      font-size: 0.725rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .risk-legend {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 1.6rem;
+    }
+
+    /* Calculadora de PSAD */
+    .psad-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .range-slider {
+      flex: 1;
+      min-width: 200px;
+      accent-color: var(--accent);
+    }
+
+    /* ==========================================================================
+       ESTAÇÃO DE TRABALHO DE IMAGEM PACS 2.0
+       ========================================================================== */
+    .pacs-container {
+      display: flex;
+      height: 700px;
+      background: var(--pacs-black);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pacs-container:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+
+    /* Barra Lateral de Miniaturas */
+    .pacs-sidebar {
+      width: 270px;
+      background: #080c14;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .pacs-sidebar-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: #0d1322;
+    }
+
+    .pacs-series-tabs {
+      display: flex;
+      gap: 0.25rem;
+      margin-top: 0.5rem;
+    }
+
+    .pacs-series-btn {
+      flex: 1;
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #9ca3af;
+      padding: 0.35rem 0.2rem;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .pacs-series-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .pacs-thumb-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .pacs-thumb-item {
+      display: flex;
+      gap: 0.6rem;
+      padding: 0.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 0.35rem;
+      border: 1px solid transparent;
+      background: #111827;
+      transition: all 0.15s;
+    }
+
+    .pacs-thumb-item:hover {
+      border-color: #374151;
+      background: #1f2937;
+    }
+
+    .pacs-thumb-item.active {
+      border-color: #38bdf8;
+      background: #0d1e38;
+    }
+
+    .pacs-thumb-img {
+      width: 64px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 4px;
+      background: #000;
+      flex-shrink: 0;
+    }
+
+    .pacs-thumb-meta {
+      font-size: 0.725rem;
+      overflow: hidden;
+    }
+
+    .pacs-thumb-title {
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pacs-thumb-sub {
+      color: #9ca3af;
+      margin-top: 0.15rem;
+      display: flex;
+      gap: 0.3rem;
+      align-items: center;
+    }
+
+    .tag-probe {
+      font-size: 0.65rem;
+      background: #1e293b;
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #38bdf8;
+    }
+
+    /* Área Central do PACS */
+    .pacs-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: #000;
+    }
+
+    .pacs-toolbar {
+      background: #0d1322;
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      z-index: 10;
+    }
+
+    .pacs-tool-btn {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #e5e7eb;
+      padding: 0.3rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.725rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: background 0.15s;
+    }
+
+    .pacs-tool-btn:hover {
+      background: #374151;
+    }
+
+    .pacs-tool-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Viewports: Suporte a Modo Simples e Modo Comparador (Split) */
+    .pacs-viewports-wrapper {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pacs-single-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+    }
+
+    .pacs-single-viewport:active {
+      cursor: grabbing;
+    }
+
+    .pacs-stage {
+      transform-origin: center center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.05s linear;
+    }
+
+    .pacs-stage img {
+      max-height: 580px;
+      max-width: 92%;
+      user-select: none;
+      pointer-events: none;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Split Viewport (Lado a Lado) */
+    .pacs-split-view {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .pacs-split-view.active {
+      display: flex;
+    }
+
+    .split-pane {
+      flex: 1;
+      border-right: 1px solid #334155;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .split-pane:last-child {
+      border-right: none;
+    }
+
+    .split-pane-header {
+      background: rgba(13, 19, 34, 0.9);
+      padding: 0.35rem 0.6rem;
+      font-size: 0.725rem;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1f2937;
+      z-index: 5;
+    }
+
+    .split-pane-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .split-pane-body img {
+      max-height: 520px;
+      max-width: 95%;
+    }
+
+    /* Overlays de Informação Médica */
+    .pacs-info-overlay {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      background: rgba(11, 15, 25, 0.88);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(55, 65, 81, 0.7);
+      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.75rem;
+      pointer-events: none;
+      max-width: 380px;
+      z-index: 5;
+    }
+
+    .pacs-info-title {
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 0.2rem;
+    }
+
+    .pacs-caliper-overlay {
+      position: absolute;
+      bottom: 0.75rem;
+      left: 0.75rem;
+      background: rgba(11, 15, 25, 0.88);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.75rem;
+      pointer-events: none;
+      max-width: 480px;
+      z-index: 5;
+    }
+
+    .pacs-hud-shortcuts {
+      position: absolute;
+      bottom: 0.75rem;
+      right: 0.75rem;
+      background: rgba(11, 15, 25, 0.8);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(55, 65, 81, 0.5);
+      border-radius: 6px;
+      padding: 0.4rem 0.65rem;
+      font-size: 0.68rem;
+      color: #9ca3af;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* ==========================================================================
+       TABELAS DE LABORATÓRIO HÍBRIDAS
+       ========================================================================== */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--surface-sub);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: rgba(56, 189, 248, 0.04);
+    }
+
+    .val-alert {
+      color: var(--alert);
+      font-weight: 700;
+    }
+
+    .val-warning {
+      color: var(--warning);
+      font-weight: 600;
+    }
+
+    .val-normal {
+      color: var(--text-main);
+    }
+
+    .val-none {
+      color: var(--text-dim);
+    }
+
+    /* Filtros da Matriz Completa */
+    .matrix-filter-bar {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      background: var(--surface-sub);
+      border: 1px solid var(--border-sub);
+      color: var(--text-main);
+      padding: 0.45rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      min-width: 220px;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .cat-pill {
+      background: var(--surface-sub);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.35rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.725rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    .cat-pill:hover, .cat-pill.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* ==========================================================================
+       CHECKLIST DE PERGUNTAS PARA A CONSULTA
+       ========================================================================== */
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 6px;
+      background: var(--surface-sub);
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .checklist-item:hover {
+      border-color: var(--border-sub);
+    }
+
+    .checklist-item input[type="checkbox"] {
+      margin-top: 0.2rem;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* ==========================================================================
+       TOAST DE NOTIFICAÇÃO
+       ========================================================================== */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #0284c7;
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      display: none;
+      z-index: 1000;
+      animation: slideUp 0.2s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       FOLHA FORMAL DE IMPRESSÃO (A4 HOSPITALAR)
+       ========================================================================== */
+    /* Refinamento final da interface */
+    .container { max-width: 1440px; padding: 2rem clamp(1rem, 3vw, 3rem); }
+    .header { position: relative; overflow: hidden; border-radius: 22px; padding: 1.5rem 1.75rem; margin-bottom: 1.1rem; background: linear-gradient(135deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 82%, #0ea5e9) 100%); box-shadow: 0 22px 55px rgba(2,132,199,.12), var(--shadow); }
+    .header::after { content: ""; position: absolute; right: -4rem; bottom: -7rem; width: 18rem; height: 18rem; border-radius: 50%; background: radial-gradient(circle, rgba(56,189,248,.2), transparent 65%); pointer-events: none; }
+    .header-title { font-size: clamp(1.35rem, 2vw, 1.8rem); letter-spacing: -.035em; }
+    .header-title-row, .header-meta, .header-actions { position: relative; z-index: 1; }
+    .header-meta { font-size: .86rem; gap: .7rem 1.3rem; }
+    .pulse-alert { padding: .35rem .7rem; border-radius: 999px; letter-spacing: .02em; }
+    .btn, .btn-theme { border-radius: 10px; padding: .62rem .9rem; }
+    .nav-tabs { position: sticky; top: 0; z-index: 10; gap: .25rem; padding: .35rem; margin: 0 0 1.5rem; border: 1px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(14px); box-shadow: var(--shadow); }
+    .nav-tab { border: 0; border-radius: 10px; padding: .78rem 1rem; }
+    .nav-tab.active { color: var(--text-main); background: var(--accent-glow); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 36%, transparent); }
+    .card { border-radius: 16px; padding: 1.4rem; margin-bottom: 1.4rem; box-shadow: var(--shadow); }
+    .metric-card, .stat-card { border-radius: 15px; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+    .metric-card:hover, .stat-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 48%, var(--border)); box-shadow: 0 14px 30px rgba(0,0,0,.16); }
+    .table-container { border-radius: 16px; box-shadow: var(--shadow); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    @media (max-width: 900px) { .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 720px) { .container { padding: 1rem .75rem 2rem; } .header { padding: 1.1rem; border-radius: 17px; } .header-title-row { align-items: flex-start; flex-direction: column; gap: .55rem; } .header-actions { width: 100%; } .header-actions .btn, .header-actions .btn-theme { flex: 1; justify-content: center; } .nav-tabs { top: .35rem; overflow-x: auto; } .nav-tab { padding: .7rem .8rem; font-size: .8rem; } .grid-3 { grid-template-columns: 1fr; } }
+
+    /* Direção visual dashboard clínico claro */
+    body.light-theme { background: linear-gradient(135deg, #eef4ff 0%, #effcf9 100%); color: #172033; }
+    body.light-theme .container { display: grid; grid-template-columns: 280px minmax(0, 1fr); grid-template-rows: auto 1fr; gap: 0 1.6rem; max-width: 1520px; min-height: 100vh; padding: 2rem; overflow-x: hidden; }
+    body.light-theme .header { grid-column: 2; grid-row: 1; border: 0; border-radius: 24px; background: rgba(255,255,255,.78); box-shadow: 0 18px 50px rgba(50,75,110,.10); padding: 1.45rem 1.7rem; }
+    body.light-theme .header::after { background: radial-gradient(circle, rgba(41,196,172,.16), transparent 65%); }
+    body.light-theme .nav-tabs { grid-column: 1; grid-row: 1 / span 2; align-self: stretch; position: sticky; top: 2rem; height: calc(100vh - 4rem); display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; gap: .45rem; padding: 1.25rem .85rem; margin: 0; border: 0; border-radius: 24px; background: linear-gradient(180deg, #17203c 0%, #0e1730 100%); box-shadow: 0 18px 50px rgba(17,28,59,.22); overflow: hidden; }
+    body.light-theme .nav-tabs::before { content: "Dossiê Clínico"; color: #fff; font-size: 1.05rem; font-weight: 800; letter-spacing: -.02em; padding: .65rem .7rem 1.25rem; }
+    body.light-theme .nav-tabs::after { content: "Paciente anonimizado"; order: 10; color: rgba(255,255,255,.45); font-size: .75rem; padding: 1rem .7rem 0; margin-top: auto; border-top: 1px solid rgba(255,255,255,.12); }
+    body.light-theme .nav-tab { justify-content: flex-start; color: rgba(255,255,255,.62); border: 0; border-radius: 12px; padding: .85rem .8rem; font-size: .82rem; font-weight: 650; white-space: normal; line-height: 1.25; text-align: left; }
+    body.light-theme .nav-tab:hover { color: #fff; background: rgba(255,255,255,.08); }
+    body.light-theme .nav-tab.active { color: #fff; background: linear-gradient(135deg, #16b981, #0ea5a4); box-shadow: 0 9px 18px rgba(16,185,129,.22); }
+    body.light-theme .tab-content { grid-column: 2; grid-row: 2; }
+    body.light-theme .card { background: rgba(255,255,255,.88); border: 1px solid rgba(193,210,222,.65); border-radius: 20px; box-shadow: 0 14px 36px rgba(48,78,105,.08); }
+    body.light-theme .metric-box { background: linear-gradient(145deg, #fff, #f2fbfa); border: 1px solid #dceeea; border-radius: 15px; padding: 1rem; }
+    body.light-theme .metric-value { color: #147d73; }
+    body.light-theme .urology-tool-box { background: #f7fbfd; border-color: #cbdde5; }
+    body.light-theme .urology-tool-box p,
+    body.light-theme .urology-tool-box .risk-legend,
+    body.light-theme .urology-tool-box .psad-slider-row span { color: #43566b !important; }
+    body.light-theme .urology-tool-box div[style*="background: rgba(0,0,0,0.2)"],
+    body.light-theme #psadExplanation { background: #e6eef3 !important; color: #41566b !important; }
+    body.light-theme #volDisplay { color: #087ea4 !important; }
+    body.light-theme .diagnostic-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
+    body.light-theme .diagnostic-grid > div { min-height: 100%; border-radius: 14px !important; background: #f5fafc !important; border-color: #d2e2e9 !important; }
+    body.light-theme .diagnostic-grid > div strong { color: #087ea4 !important; }
+    body.light-theme .diagnostic-grid > div:nth-child(2) { border-top: 3px solid #6d4cc2 !important; }
+    body.light-theme .diagnostic-grid > div:nth-child(3) { border-top: 3px solid #087ea4 !important; }
+    body.light-theme .diagnostic-grid > div:nth-child(4) { border-top: 3px solid #c2410c !important; }
+    #tab-resumo, #tab-laboratorial, #tab-pacs, #tableFullWrapper { scroll-margin-top: 5.5rem; }
+    .date-current { background: #e5f2f7 !important; color: #087ea4 !important; font-weight: 700; }
+    .pacs-container { margin-bottom: 1.5rem; }
+    @media (max-width: 720px) { body.light-theme .diagnostic-grid { grid-template-columns: 1fr; } }
+    body.light-theme .table-container { background: #fff; border: 1px solid #dce6ef; box-shadow: 0 12px 30px rgba(48,78,105,.06); }
+    body.light-theme .pacs-tool-btn { border-radius: 9px; }
+    @media (max-width: 900px) {
+      body.light-theme .container { display: block; padding: 1rem; }
+      body.light-theme .nav-tabs { position: sticky; top: .5rem; z-index: 20; height: auto; flex-direction: row; overflow-x: auto; margin-bottom: 1rem; padding: .45rem; border-radius: 15px; }
+      body.light-theme .nav-tabs::before, body.light-theme .nav-tabs::after { display: none; }
+      body.light-theme .nav-tab { justify-content: center; min-width: max-content; padding: .7rem .85rem; }
+    }
+
+    /* Menu tradicional no topo */
+    body.light-theme .container { display: block; min-height: auto; max-width: 1520px; padding: 2rem; overflow: visible; }
+    body.light-theme .header { margin-bottom: 1rem; }
+    body.light-theme .nav-tabs { position: sticky; top: .75rem; z-index: 20; height: auto; display: flex; flex-direction: row; align-items: center; gap: .35rem; padding: .4rem; margin: 0 0 1.5rem; border: 1px solid #25375b; border-radius: 15px; background: #17203c; box-shadow: 0 12px 28px rgba(17,28,59,.18); overflow-x: auto; }
+    body.light-theme .nav-tabs::before, body.light-theme .nav-tabs::after { display: none; }
+    body.light-theme .nav-tab { justify-content: center; color: #fff; white-space: nowrap; text-align: center; padding: .72rem 1rem; }
+    body.light-theme .nav-tab:hover { color: #fff; background: rgba(255,255,255,.12); }
+    body.light-theme .nav-tab.active { color: #fff; background: #087ea4; }
+    body.light-theme .tab-content { display: none; }
+    body.light-theme .tab-content.active { display: block; }
+    @media (max-width: 720px) { body.light-theme .container { padding: 1rem .75rem 2rem; } body.light-theme .nav-tabs { top: .35rem; } body.light-theme .nav-tab { padding: .68rem .82rem; font-size: .8rem; } }
+
+    @media print {
+      body {
+        background: #fff !important;
+        color: #000 !important;
+        font-size: 11pt !important;
+      }
+      .no-print, .nav-tabs, .header-actions, .btn, .cat-pill, .matrix-filter-bar {
+        display: none !important;
+      }
+      .container {
+        display: block !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .card {
+        background: #fff !important;
+        border: 1px solid #ccc !important;
+        color: #000 !important;
+        box-shadow: none !important;
+      }
+      th {
+        background: #f1f5f9 !important;
+        color: #000 !important;
+      }
+      td {
+        color: #000 !important;
+      }
+      .tab-content {
+        display: none !important;
+      }
+      #tab-dossie {
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+<body class="light-theme">
+
+  <div class="container">
+    
+    <!-- Cabeçalho Principal -->
+    <header class="header">
+      <div>
+        <div class="header-title-row">
+          <h1 class="header-title">Dossiê Clínico</h1>
+          <div class="pulse-alert">
+            <span class="pulse-dot"></span>
+            PSA 7,94 ng/mL (+745%)
+          </div>
+        </div>
+        <div class="header-meta">
+          <span><strong>Idade:</strong> 29 anos</span>
+          <span><strong>Prontuário:</strong> removido</span>
+          <span><strong>Última Coleta:</strong> 09/11/2026</span>
+          <span><strong>Status:</strong> Investigação Urológica Prioritária</span>
+        </div>
+      </div>
+      
+      <div class="header-actions no-print">
+        <button onclick="copyDoctorSummary()" class="btn" title="Copiar resumo estruturado para enviar ao médico">
+          📋 Copiar Resumo Urológico
+        </button>
+        <button onclick="toggleTheme()" class="btn-theme" id="themeBtn" title="Alternar entre modo escuro (PACS) e claro (consultório)">
+          ☀️ Modo Claro
+        </button>
+        <button onclick="window.print()" class="btn btn-secondary" title="Imprimir dossiê médico formato A4">
+          🖨️ Imprimir A4
+        </button>
+      </div>
+    </header>
+
+    <!-- Navegação em Abas -->
+    <nav class="nav-tabs no-print">
+      <button class="nav-tab active" onclick="switchTab('tab-laboratorial')">
+        📊 2023-2026
+      </button>
+      <button class="nav-tab" onclick="switchTab('tab-resumo')">
+        🩺 Resumo
+      </button>
+      <button class="nav-tab" onclick="switchTab('tab-pacs')">
+        🖼️ Imagens
+      </button>
+      <button class="nav-tab" onclick="switchTab('tab-originais')">
+        📁 Arquivos originais
+      </button>
+    </nav>
+
+    <!-- =======================================================================
+         ABA 1: RESUMO CLÍNICO & FERRAMENTAS UROLÓGICAS INTERATIVAS
+         ======================================================================= -->
+    <section id="tab-resumo" class="tab-content">
+      
+      <!-- 6 Métricas Clínicas Chave -->
+      <div class="grid-3" style="margin-bottom: 1.25rem;">
+        <div class="metric-box">
+          <div class="metric-label">PSA Total Atual</div>
+          <div class="metric-value" style="color: var(--alert);">7,94 ng/mL</div>
+          <div class="metric-sub">Basal: 0,46 a 0,60 ng/mL (&Delta; +7,00)</div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Relação PSA Livre / Total</div>
+          <div class="metric-value" style="color: var(--warning);">17,25 %</div>
+          <div class="metric-sub">PSA Livre: 1,37 ng/mL (Faixa cinzenta)</div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Leucócitos &amp; Linfócitos</div>
+          <div class="metric-value" style="color: var(--warning);">10.770 /µL</div>
+          <div class="metric-sub">Linfócitos: 4.890 /µL (45,4% Linfocitose)</div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Testosterona Total</div>
+          <div class="metric-value">317,7 ng/dL</div>
+          <div class="metric-sub">Queda abrupta (Pico prévio: 1.605 ng/dL)</div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">LH (Hormônio Luteinizante)</div>
+          <div class="metric-value" style="color: var(--success);">3,6 mUI/mL</div>
+          <div class="metric-sub">Reativação do eixo (&lt; 0,1 em jul/2025)</div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Volume Testicular (17/10/26)</div>
+          <div class="metric-value">7,0 e 7,6 cm³</div>
+          <div class="metric-sub">Hipotrofia bilateral (Ref: 12 a 25 cm³)</div>
+        </div>
+      </div>
+
+      <!-- FERRAMENTAS UROLÓGICAS INTERATIVAS -->
+      <div class="card">
+        <h3 class="card-title">
+          <span>Ferramentas de organização para discussão com o urologista</span>
+          <span class="badge badge-neutral">Não substitui avaliação médica</span>
+        </h3>
+
+        <div class="grid-2">
+          
+          <!-- Ferramenta 1: Régua Visual de Risco Livre/Total -->
+          <div class="urology-tool-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: #38bdf8;">1. Relação PSA Livre / Total (17,25%)</strong>
+              <span class="badge badge-warning">Zona Intermediária</span>
+            </div>
+            <p style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;">
+              Na faixa de PSA 4 a 10 ng/mL, a relação livre/total estratifica o risco de lesão focal versus hiperplasia/inflamação difusa.
+            </p>
+
+            <div class="risk-gauge-container">
+              <div class="risk-bar">
+                <div class="risk-marker" style="left: 45%;"></div>
+              </div>
+              <div class="risk-legend">
+                <span>&lt; 10% (Alto Risco)</span>
+                <span style="color: #38bdf8; font-weight: bold;">10–20% (Zona Cinzenta: 17,25%)</span>
+                <span>20–25% (Baixo)</span>
+                <span>&gt; 25% (Benigno)</span>
+              </div>
+            </div>
+            <div style="font-size: 0.725rem; color: var(--text-dim); margin-top: 0.5rem; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px;">
+              <strong>Como ler:</strong> a relação é um dado complementar e não permite estimar isoladamente a probabilidade individual de câncer. A decisão sobre repetição do PSA, exame físico ou ressonância deve ser feita pelo urologista.
+            </div>
+          </div>
+
+          <!-- Ferramenta 2: Densidade de PSA (PSAD) Interativa -->
+          <div class="urology-tool-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: #c084fc;">2. Densidade de PSA Projetada (PSAD)</strong>
+              <span id="psadBadge" class="badge badge-alert">PSAD: 0,32 ng/mL/cc</span>
+            </div>
+            <p style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;">
+              Ajuste o volume prostático estimado para simular a densidade de PSA (Ponto de corte clínico clássico: <strong>0,15 ng/mL/cc</strong>).
+            </p>
+
+            <div class="psad-slider-row">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Volume:</span>
+              <input type="range" id="volSlider" class="range-slider" min="15" max="50" value="25" oninput="updatePSAD(this.value)">
+              <strong id="volDisplay" style="font-size: 0.85rem; color: #fff; min-width: 55px;">25 cm³</strong>
+            </div>
+
+            <div style="font-size: 0.725rem; color: var(--text-dim); margin-top: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px;" id="psadExplanation">
+              <strong>Simulação:</strong> com volume hipotético de 25 cm³, a densidade seria <strong>0,32 ng/mL/cc</strong>. O volume real da próstata ainda precisa ser informado por exame adequado; este cálculo não é diagnóstico nem torna a ressonância obrigatória.
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- =======================================================================
+         ABA 2: WORKSTATION PACS 2.0 (VISUALIZADOR RADIOLÓGICO)
+         ======================================================================= -->
+    <section id="tab-originais" class="tab-content">
+      <div class="card">
+        <h3 class="card-title">Arquivos originais disponíveis</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;"><strong>Aviso:</strong> o Laudo Evolutivo original não exibe todos os exames do histórico. Os documentos abaixo preservam as coletas e os resultados completos utilizados neste painel.</p>
+        <div class="grid-2">
+          <div>
+            <h4 style="margin-bottom: .6rem;">Laudos laboratoriais</h4>
+            <ul style="padding-left: 1.2rem; line-height: 1.9;">
+              <li><a href="originais_publicos/pdfs/Laudo%20Completo%2008_05_2023.pdf" target="_blank">Laudo Completo 08/05/2023</a></li>
+              <li><a href="originais_publicos/pdfs/Laudo%20Completo%2028_09_2023.pdf" target="_blank">Laudo Completo 28/09/2023</a></li>
+              <li><a href="originais_publicos/pdfs/Laudo%20Completo%2028_11_2023.pdf" target="_blank">Laudo Completo 28/11/2023</a></li>
+              <li><a href="originais_publicos/pdfs/Laudo%20Completo%2006_12_2024.pdf" target="_blank">Laudo Completo 06/12/2024</a></li>
+              <li><a href="originais_publicos/pdfs/Laudo%20Completo%2018_03_2025.pdf" target="_blank">Laudo Completo 18/03/2025</a></li>
+              <li><a href="originais_publicos/pdfs/Laudo%20Completo%2022_07_2025.pdf" target="_blank">Laudo Completo 22/07/2025</a></li>
+              <li><a href="originais_publicos/pdfs/Laudo%20Completo%2007_04_2026.pdf" target="_blank">Laudo Completo 07/04/2026</a></li>
+              <li><a href="originais_publicos/pdfs/Laudo%20Completo%2009_11_2026.pdf" target="_blank">Laudo Completo 09/11/2026</a></li>
+              <li><a href="originais_publicos/pdfs/Laudo%20Evolutivo.pdf" target="_blank">Laudo Evolutivo</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="margin-bottom: .6rem;">Imagens originais</h4>
+            <p style="color: var(--text-muted); line-height: 1.6;">As 28 imagens ultrassonográficas estão disponíveis nas pastas:</p>
+            <ul style="padding-left: 1.2rem; line-height: 1.9;">
+              <li><a href="originais_publicos/imagens/Imagens_Exames_1/" target="_blank">Ecografia de Abdômen Total</a></li>
+              <li><a href="originais_publicos/imagens/Imagens_Exames_2/" target="_blank">Bolsa Testicular com Doppler</a></li>
+              <li><a href="originais_publicos/pdfs/ultrassom_abdomen_total.pdf" target="_blank">Laudo - Ecografia de Abdômen Total</a></li>
+              <li><a href="originais_publicos/pdfs/ultrassom_bolsa_testicular_doppler.pdf" target="_blank">Laudo - Bolsa Testicular com Doppler</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-pacs" class="tab-content">
+
+      <!-- Resumo Oficial dos 2 Laudos de Imagem -->
+      <div class="grid-2">
+        <div class="card">
+          <h4 class="card-title">1. Ecografia de Abdômen Total (Laudo 4856544)</h4>
+          <p style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.6;">
+            <strong>Resultado Oficial:</strong> Exame ecográfico sem anormalidades detectáveis.<br>
+            Fígado de volume normal, contornos regulares e ecotextura preservada. Vesícula biliar alitiásica de paredes finas. Pâncreas, baço e grandes vasos retroperitoneais normais. Rins bilateralmente tópicos com boa espessura córtico-medular, sem cálculos ou ectasia pielocalicial. Bexiga de repleção fisiológica e paredes normais.
+          </p>
+        </div>
+
+        <div class="card">
+          <h4 class="card-title">2. USG de Bolsa Testicular com Doppler (Laudo 4856547)</h4>
+          <p style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.6;">
+            <strong>Conclusão Radiológica:</strong> <span class="badge badge-warning">Testículos Hipotróficos</span>.<br>
+            Testículo Direito: 36x15x23 mm (Volume: <strong>7,0 cm³</strong>) | Testículo Esquerdo: 32x17x25 mm (Volume: <strong>7,6 cm³</strong>). Referência normal adulto jovem: 12 a 25 cm³.<br>
+            <strong>Doppler Vascular:</strong> Sem varicocele. Plexo pampiniforme em repouso de 1,4 a 1,7 mm; manobra de Valsalva sem refluxo patológico significativo (máx 2,3 mm).
+          </p>
+        </div>
+      </div>
+      
+      <div class="pacs-container" id="pacsContainer">
+        
+        <!-- Barra Lateral de Miniaturas -->
+        <div class="pacs-sidebar">
+          <div class="pacs-sidebar-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">Séries Ultrassom</span>
+              <span style="font-size: 0.7rem; color: #38bdf8;">17/10/2026</span>
+            </div>
+            <div class="pacs-series-tabs">
+              <button id="pacsBtnAbd" class="pacs-series-btn active" onclick="filterPacsSeries('abdomen')">Abdômen (15)</button>
+              <button id="pacsBtnTest" class="pacs-series-btn" onclick="filterPacsSeries('testiculo')">Testículo (13)</button>
+              <button id="pacsBtnAll" class="pacs-series-btn" onclick="filterPacsSeries('all')">Todas (28)</button>
+            </div>
+          </div>
+          <div class="pacs-thumb-list" id="pacsThumbList">
+            <!-- Miniaturas via JS -->
+          </div>
+        </div>
+
+        <!-- Área Principal do PACS -->
+        <div class="pacs-main">
+          
+          <!-- Toolbar Superior da Workstation -->
+          <div class="pacs-toolbar">
+            <div style="display: flex; gap: 0.3rem; align-items: center;">
+              <button class="pacs-tool-btn" onclick="pacsPrev()" title="Corte anterior (Seta Esquerda)">◀ Anterior</button>
+              <button class="pacs-tool-btn" onclick="pacsNext()" title="Próximo corte (Seta Direita)">Próxima ▶</button>
+              <span style="color: #9ca3af; font-size: 0.725rem; margin-left: 0.25rem;" id="pacsCounter">1 / 15</span>
+              <button class="pacs-tool-btn" id="pacsPlayBtn" onclick="togglePacsPlay()" title="Reprodução automática contínua (Cine)">▶ Cine</button>
+            </div>
+
+            <!-- Modos: Simples vs Split -->
+            <div style="display: flex; gap: 0.3rem; align-items: center;">
+              <button class="pacs-tool-btn active" id="btnViewSingle" onclick="setPacsViewMode('single')">Exibição Única</button>
+              <button class="pacs-tool-btn" id="btnViewSplit" onclick="setPacsViewMode('split')">Comparar Lado a Lado</button>
+            </div>
+
+            <!-- Ferramentas Radiológicas -->
+            <div style="display: flex; gap: 0.3rem; align-items: center;">
+              <button class="pacs-tool-btn" onclick="pacsZoomIn()" title="Zoom (+)">➕</button>
+              <button class="pacs-tool-btn" onclick="pacsZoomOut()" title="Zoom (-)">➖</button>
+              <button class="pacs-tool-btn" onclick="pacsFit()" title="Ajustar ao tamanho original">⛶ Ajustar</button>
+              <button class="pacs-tool-btn" id="pacsInvertBtn" onclick="pacsToggleInvert()" title="Inverter tons de cinza (Negativo)">🌓 Negativo</button>
+              <button class="pacs-tool-btn" onclick="pacsReset()" title="Resetar transformações">↺ Reset</button>
+              <button class="pacs-tool-btn" onclick="pacsFullscreen()" title="Tela Cheia (F)">⛶ Tela Cheia</button>
+            </div>
+
+            <!-- Slider de Contraste -->
+            <div style="display: flex; gap: 0.4rem; align-items: center; font-size: 0.7rem; color: #9ca3af;">
+              <span>Contraste</span>
+              <input type="range" id="pacsContrast" min="60" max="180" value="100" style="width: 60px;" oninput="pacsUpdateFilters()">
+            </div>
+          </div>
+
+          <!-- Wrapper dos Viewports -->
+          <div class="pacs-viewports-wrapper">
+            
+            <!-- MODO SIMPLES (DEFAULT) -->
+            <div class="pacs-single-viewport" id="pacsSingleViewport">
+              <div class="pacs-stage" id="pacsStage">
+                <img id="pacsImg" src="originais_publicos/imagens/Imagens_Exames_1/1792243123c202.jpg" alt="Ultrassom">
+              </div>
+
+              <!-- HUD Overlay de Informações -->
+              <div class="pacs-info-overlay">
+                <div class="pacs-info-title" id="pacsOverlayTitle">Fígado - Lobo Hepático Direito</div>
+                <div style="color: #9ca3af; font-size: 0.7rem;" id="pacsOverlaySub">C5-1 Convexo (25Hz) | 10:17:50 | 16 cm</div>
+              </div>
+
+              <!-- Medições do Radiologista -->
+              <div class="pacs-caliper-overlay">
+                <strong style="color: #fff;">Medições &amp; Achados Radiológicos:</strong>
+                <div style="color: #38bdf8; font-family: monospace; margin-top: 0.15rem;" id="pacsOverlayCaliper">Parênquima homogêneo</div>
+                <div style="color: #9ca3af; font-size: 0.7rem; margin-top: 0.15rem;" id="pacsOverlayDesc">Corte oblíquo subcostal.</div>
+              </div>
+
+              <!-- Guia de Atalhos Rápidos -->
+              <div class="pacs-hud-shortcuts">
+                Atalhos: [← / →] Navegar &bull; [Scroll / +/-] Zoom &bull; [Espaço] Cine &bull; [I] Negativo &bull; [R] Reset
+              </div>
+            </div>
+
+            <!-- MODO COMPARADOR (SPLIT VIEW) -->
+            <div class="pacs-split-view" id="pacsSplitView">
+              
+              <!-- Painel A (Esquerdo) -->
+              <div class="split-pane">
+                <div class="split-pane-header">
+                  <span style="font-weight: 600; color: #38bdf8;">Painel A:</span>
+                  <select id="splitSelectA" style="background: #1f2937; color: #fff; border: 1px solid #374151; font-size: 0.7rem; border-radius: 4px; padding: 2px 4px;" onchange="updateSplitPane('A', this.value)">
+                    <!-- Options via JS -->
+                  </select>
+                </div>
+                <div class="split-pane-body" id="splitBodyA">
+                  <img id="splitImgA" src="originais_publicos/imagens/Imagens_Exames_1/1792243359c21e.jpg" alt="Exame A">
+                </div>
+                <div style="padding: 0.4rem 0.6rem; background: #0d1322; font-size: 0.7rem; color: #9ca3af; border-top: 1px solid #1f2937;" id="splitInfoA">
+                  Carregando informações...
+                </div>
+              </div>
+
+              <!-- Painel B (Direito) -->
+              <div class="split-pane">
+                <div class="split-pane-header">
+                  <span style="font-weight: 600; color: #c084fc;">Painel B:</span>
+                  <select id="splitSelectB" style="background: #1f2937; color: #fff; border: 1px solid #374151; font-size: 0.7rem; border-radius: 4px; padding: 2px 4px;" onchange="updateSplitPane('B', this.value)">
+                    <!-- Options via JS -->
+                  </select>
+                </div>
+                <div class="split-pane-body" id="splitBodyB">
+                  <img id="splitImgB" src="originais_publicos/imagens/Imagens_Exames_1/1792243323c219.jpg" alt="Exame B">
+                </div>
+                <div style="padding: 0.4rem 0.6rem; background: #0d1322; font-size: 0.7rem; color: #9ca3af; border-top: 1px solid #1f2937;" id="splitInfoB">
+                  Carregando informações...
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- =======================================================================
+         ABA 3: EVOLUÇÃO LABORATORIAL (GRÁFICOS + TABELA HÍBRIDA)
+         ======================================================================= -->
+    <section id="tab-laboratorial" class="tab-content active">
+      
+      <!-- Tabela Híbrida: Visão Focada vs Matriz Completa -->
+      <div class="card">
+        <div class="card-title">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span>Matriz Laboratorial Consolidada</span>
+            <div style="display: flex; gap: 0.25rem;" class="no-print">
+              <button class="pacs-tool-btn active" id="btnTabFocus" onclick="setLabTableMode('focus')">⭐ Visão Essencial</button>
+              <button class="pacs-tool-btn" id="btnTabAll" onclick="setLabTableMode('all')">📑 Painel Completo (43 Exames)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de Busca e Categorias (Aparece no Modo Completo) -->
+        <div class="matrix-filter-bar no-print" id="matrixFilterBar" style="display: none;">
+          <input type="text" id="matrixSearchInput" class="search-input" placeholder="🔍 Buscar exame (ex: ferritina, testo, psa)..." oninput="filterMatrixTable()">
+          <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;" id="catPillsContainer">
+            <button class="cat-pill active" onclick="filterMatrixCat('all')">Todos (43)</button>
+            <button class="cat-pill" onclick="filterMatrixCat('psa')">Próstata</button>
+            <button class="cat-pill" onclick="filterMatrixCat('hormonios')">Hormônios</button>
+            <button class="cat-pill" onclick="filterMatrixCat('hemograma')">Hemograma</button>
+            <button class="cat-pill" onclick="filterMatrixCat('metabolico')">Metabolismo</button>
+            <button class="cat-pill" onclick="filterMatrixCat('hepatica')">Fígado</button>
+            <button class="cat-pill" onclick="filterMatrixCat('renal')">Rins</button>
+            <button class="cat-pill" onclick="filterMatrixCat('vitaminas')">Vitaminas</button>
+          </div>
+        </div>
+
+        <!-- VISÃO 1: TABELA FOCADA (10 ESSENCIAIS) -->
+        <div class="table-container" id="tableFocusWrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Exame</th>
+                <th>08/05/23</th>
+                <th>28/09/23</th>
+                <th>28/11/23</th>
+                <th>06/12/24</th>
+                <th>18/03/25</th>
+                <th>22/07/25</th>
+                <th>07/04/26</th>
+                <th class="date-current">09/11/26</th>
+                <th>Referência Normal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>PSA Total (ng/mL)</strong></td>
+                <td>-</td>
+                <td>0,47</td>
+                <td>-</td>
+                <td>0,60</td>
+                <td>0,46</td>
+                <td>0,94</td>
+                <td>-</td>
+                <td class="val-alert">7,94 ⚠️</td>
+                <td>&lt; 4,00 (&lt; 1,0 para 29a)</td>
+              </tr>
+              <tr>
+                <td><strong>PSA Livre (ng/mL)</strong></td>
+                <td>-</td>
+                <td>0,35</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="val-warning">1,37</td>
+                <td>-</td>
+              </tr>
+              <tr>
+                <td><strong>Relação Livre/Total</strong></td>
+                <td>-</td>
+                <td class="val-normal">74,5%</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="val-warning">17,2%</td>
+                <td>&gt; 20–25% (Benigno)</td>
+              </tr>
+              <tr>
+                <td><strong>Testosterona Total (ng/dL)</strong></td>
+                <td>362,3</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="val-warning">1.605,9</td>
+                <td class="val-warning">1.199,6</td>
+                <td>845,9</td>
+                <td class="val-warning">1.252,2</td>
+                <td class="val-warning">317,7 ⬇️</td>
+                <td>164,9 a 753,4</td>
+              </tr>
+              <tr>
+                <td><strong>LH (mUI/mL)</strong></td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="val-alert">&lt; 0,1</td>
+                <td>-</td>
+                <td class="val-normal">3,6 ⬆️</td>
+                <td>1,5 a 9,3</td>
+              </tr>
+              <tr>
+                <td><strong>Estradiol (pg/mL)</strong></td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="val-alert">88,5</td>
+                <td class="val-warning">55,9</td>
+                <td class="val-warning">54,5</td>
+                <td>-</td>
+                <td>17,1</td>
+                <td>Até 39,8</td>
+              </tr>
+              <tr>
+                <td><strong>Leucócitos (/µL)</strong></td>
+                <td>7.160</td>
+                <td>8.790</td>
+                <td>-</td>
+                <td class="val-alert">14.920</td>
+                <td>10.140</td>
+                <td>11.280</td>
+                <td>8.070</td>
+                <td class="val-alert">10.770</td>
+                <td>4.000 a 10.000</td>
+              </tr>
+              <tr>
+                <td><strong>Linfócitos (/µL)</strong></td>
+                <td>2.885</td>
+                <td class="val-warning">4.070</td>
+                <td>-</td>
+                <td class="val-alert">4.759</td>
+                <td>3.610</td>
+                <td>3.677</td>
+                <td>3.365</td>
+                <td class="val-alert">4.890 (45%)</td>
+                <td>1.000 a 3.000 (20-40%)</td>
+              </tr>
+              <tr>
+                <td><strong>Creatinina (mg/dL)</strong></td>
+                <td>1,06</td>
+                <td>-</td>
+                <td>-</td>
+                <td>1,10</td>
+                <td>1,01</td>
+                <td>0,96</td>
+                <td>1,08</td>
+                <td>0,90</td>
+                <td>0,70 a 1,30 (eGFR &gt; 90)</td>
+              </tr>
+              <tr>
+                <td><strong>Urocultura (09/11/26)</strong></td>
+                <td colspan="7" style="text-align: center; color: var(--text-dim);">Não solicitada nestas datas</td>
+                <td class="val-normal">Negativa</td>
+                <td>Sem crescimento</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- VISÃO 2: TABELA COMPLETA (43 BIOMARCADORES) -->
+        <div class="table-container" id="tableFullWrapper" style="display: none; max-height: 550px; overflow-y: auto;">
+          <table id="matrixTable">
+            <thead>
+              <tr>
+                <th>Biomarcador</th>
+                <th>Unid</th>
+                <th>08/05/23</th>
+                <th>28/09/23</th>
+                <th>28/11/23</th>
+                <th>06/12/24</th>
+                <th>18/03/25</th>
+                <th>22/07/25</th>
+                <th>07/04/26</th>
+                <th class="date-current">09/11/26</th>
+                <th>Referência</th>
+              </tr>
+            </thead>
+            <tbody id="matrixTableBody">
+              <!-- Linhas geradas via JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- Gráfico Dinâmico com Seletor -->
+      <div class="card">
+        <div class="card-title">
+          <span>Curva Evolutiva dos Exames Laboratoriais (2023–2026)</span>
+          <div style="display: flex; gap: 0.35rem;" class="no-print">
+            <button class="pacs-tool-btn active" id="btnChartPSA" onclick="showChart('psa')">PSA Total &amp; Livre</button>
+            <button class="pacs-tool-btn" id="btnChartHorm" onclick="showChart('horm')">Eixo Hormonal (Testo &amp; LH)</button>
+            <button class="pacs-tool-btn" id="btnChartLeuko" onclick="showChart('leuko')">Leucócitos &amp; Linfócitos</button>
+            <button class="pacs-tool-btn" id="btnChartMetab" onclick="showChart('metab')">Metabolismo &amp; Glicose</button>
+          </div>
+        </div>
+        <div style="height: 320px; position: relative;">
+          <canvas id="evolutionChart"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =======================================================================
+         ABA 4: AUDITORIA DAS OMISSÕES DO LABORATÓRIO
+         ======================================================================= -->
+    <section id="tab-auditoria" class="tab-content">
+      <div class="card">
+        <h3 class="card-title" style="color: #38bdf8;">Auditoria Oficial: O que o Portal do Laboratório Deixou de Fora</h3>
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1rem;">
+          O relatório de "Evolução" disponibilizado no site do laboratório omitiu dados cruciais que modificam o raciocínio médico. Abaixo está a conferência detalhada:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          
+          <div style="background: var(--surface-sub); border: 1px solid var(--border); border-radius: 6px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: var(--alert);">1. Omissão de 4 Coletas Inteiras (2023 e 2024)</strong>
+              <span class="badge badge-alert">Impacto Alto</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+              O portal simplesmente apagou os exames de <strong>08/05/2023, 28/09/2023, 28/11/2023 e 06/12/2024</strong>. Isso ocultou o histórico basal: em setembro/2023 seu PSA era 0,47 ng/mL e em dezembro/2024 era 0,60 ng/mL. Ao esconder isso, o médico do laboratório não vê que você tinha um baseline perfeitamente estável.
+            </p>
+          </div>
+
+          <div style="background: var(--surface-sub); border: 1px solid var(--border); border-radius: 6px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: var(--warning);">2. Omissão do Cálculo da Relação PSA Livre / PSA Total</strong>
+              <span class="badge badge-warning">Impacto Diagnóstico</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+              O laboratório dosou o PSA Livre (1,37 ng/mL) e o PSA Total (7,94 ng/mL), mas não computou nem destacou a fração de <strong>17,25%</strong>. Esse percentual é a chave para o urologista saber que você está na faixa intermediária e não na zona de alta malignidade (&lt; 10%).
+            </p>
+          </div>
+
+          <div style="background: var(--surface-sub); border: 1px solid var(--border); border-radius: 6px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: #c084fc;">3. Omissão de Hormônios e Frações Livres (FSH, DHT)</strong>
+              <span class="badge badge-neutral">Impacto Endócrino</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+              A Dihidrotestosterona (DHT), o FSH (0,4 mUI/mL suprimido em julho/25) e as frações calculadas de Testosterona Livre e Biodisponível foram deixadas de fora do laudo evolutivo, apagando a evidência da oscilação hormonal prévia.
+            </p>
+          </div>
+
+          <div style="background: var(--surface-sub); border: 1px solid var(--border); border-radius: 6px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: #38bdf8;">4. Omissão Total dos 2 Laudos Ecográficos e das 28 Imagens</strong>
+              <span class="badge badge-alert">Impacto Radiológico</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+              A ecografia abdominal e a ultrassonografia com Doppler da bolsa testicular não constam no laudo evolutivo do portal. O médico perderia o dado de que seus testículos medem 7,0 e 7,6 cm³ (hipotróficos).
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         ABA 5: DOSSIÊ DE IMPRESSÃO FORMAL A4 (PARA ENTREGAR AO MÉDICO)
+         ======================================================================= -->
+    <section id="tab-dossie" class="tab-content">
+      <div style="text-align: right; margin-bottom: 0.75rem;" class="no-print">
+        <button onclick="window.print()" class="btn">🖨️ Imprimir Folha de Encaminhamento</button>
+      </div>
+
+      <div class="card" style="background: #fff; color: #000; border: 1px solid #d1d5db; padding: 2rem;">
+        
+        <!-- Cabeçalho A4 -->
+        <div style="border-bottom: 2px solid #000; padding-bottom: 0.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h2 style="font-size: 1.3rem; font-weight: 800; color: #000; text-transform: uppercase;">Relatório Clínico Urológico Executivo</h2>
+            <div style="font-size: 0.85rem; color: #374151; margin-top: 0.2rem;">
+              <strong>Paciente:</strong> anonimizado &bull; <strong>DN:</strong> removida &bull; <strong>Prontuário:</strong> removido
+            </div>
+          </div>
+          <div style="text-align: right; font-size: 0.75rem; color: #6b7280;">
+            Data de Emissão: 14/11/2026<br>
+            Última Coleta: 09/11/2026
+          </div>
+        </div>
+
+        <!-- Alerta Clínico -->
+        <div style="background: #fef2f2; border: 1px solid #f87171; border-radius: 4px; padding: 0.75rem; margin-bottom: 1rem;">
+          <strong style="color: #991b1b; font-size: 0.85rem;">DEMANDA PRINCIPAL PARA CONSULTA:</strong>
+          <p style="font-size: 0.8rem; color: #7f1d1d; margin-top: 0.25rem; line-height: 1.5;">
+            Investigação de elevação aguda e isolada do PSA Total para <strong>7,94 ng/mL</strong> (coleta de 09/11/2026), partindo de baseline normal (0,46 a 0,60 ng/mL). PSA Livre: 1,37 ng/mL com Relação Livre/Total de <strong>17,25%</strong>. Presença simultânea de leucocitose (10.770) e linfocitose marcada (4.890 / 45,4%) com urocultura estéril.
+          </p>
+        </div>
+
+        <!-- Tabela Comparativa Impressa -->
+        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.4rem; color: #000;">1. Painel Evolutivo Consolidado</h4>
+        <table style="width: 100%; border: 1px solid #000; font-size: 0.75rem; margin-bottom: 1rem; border-collapse: collapse;">
+          <tr style="background: #f3f4f6;">
+            <th style="padding: 4px 6px; border: 1px solid #000;">Parâmetro</th>
+            <th style="padding: 4px 6px; border: 1px solid #000;">Set/23</th>
+            <th style="padding: 4px 6px; border: 1px solid #000;">Dez/24</th>
+            <th style="padding: 4px 6px; border: 1px solid #000;">Mar/25</th>
+            <th style="padding: 4px 6px; border: 1px solid #000;">Jul/25</th>
+            <th style="padding: 4px 6px; border: 1px solid #000;">Abr/26</th>
+            <th style="padding: 4px 6px; border: 1px solid #000; background: #fee2e2;">Nov/26</th>
+            <th style="padding: 4px 6px; border: 1px solid #000;">Referência</th>
+          </tr>
+          <tr>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">PSA Total (ng/mL)</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">0,47</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">0,60</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">0,46</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">0,94</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold; color: #b91c1c;">7,94</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">&lt; 4,00 (&lt; 1,0 para 29a)</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">PSA Livre (ng/mL)</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">0,35 (74%)</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">1,37 (17,2%)</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">&gt; 20–25% (Benigno)</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">Testosterona Total (ng/dL)</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">1.605,9</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">1.199,6</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">845,9</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">1.252,2</td>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">317,7 ⬇️</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">164,9 a 753,4</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">LH (mUI/mL)</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">&lt; 0,1</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">-</td>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">3,6 ⬆️</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">1,5 a 9,3</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">Leucócitos (/µL)</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">8.790</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">14.920</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">10.140</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">11.280</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">8.070</td>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">10.770</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">4.000 a 10.000</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">Linfócitos Absolutos (/µL)</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">4.070</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">4.759</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">3.610</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">3.677</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">3.365</td>
+            <td style="padding: 4px 6px; border: 1px solid #000; font-weight: bold;">4.890 (45,4%)</td>
+            <td style="padding: 4px 6px; border: 1px solid #000;">1.000 a 3.000</td>
+          </tr>
+        </table>
+
+        <!-- Laudos de Imagem -->
+        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.4rem; color: #000;">2. Exames de Imagem Realizados (17/10/2026 - Dr. Marcelo Gualda Carneiro)</h4>
+        <p style="font-size: 0.8rem; line-height: 1.5; margin-bottom: 0.75rem; color: #1f2937;">
+          &bull; <strong>Abdômen Total (Laudo 4856544):</strong> Fígado, vias biliares, pâncreas e baço sem anormalidades. Rins normais bilateralmente sem litíase ou hidronefrose. Bexiga de paredes finas e conteúdo límpido.<br>
+          &bull; <strong>Bolsa Testicular com Doppler (Laudo 4856547):</strong> Testículos tópicos com hipotrofia bilateral: <strong>Direito: 7,0 cm³</strong> | <strong>Esquerdo: 7,6 cm³</strong> (Ref: 12 a 25 cm³). Doppler descarta varicocele (Valsalva sem refluxo contínuo patológico).
+        </p>
+
+        <!-- Parecer Sugerido -->
+        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.4rem; color: #000;">3. Sugestão de Encaminhamento Clínico</h4>
+        <ul style="font-size: 0.8rem; line-height: 1.5; margin-left: 1.25rem; color: #1f2937;">
+          <li>Indicação de <strong>Ressonância Magnética Multiparamétrica de Próstata (mpMRI 3T)</strong> com protocolo PI-RADS v2.1 para cálculo do volume prostático por elipsoide, mapeamento setorial e exclusão de lesão focal clinicamente significativa.</li>
+          <li>Repetição de PSA Total e Livre em 4 a 6 semanas, sob abstinência ejaculatória rigorosa de 4 a 5 dias e sem prática de ciclismo ou carga pélvica pesada.</li>
+          <li>Painel molecular urinário (PCR) para patógenos atípicos (<em>Chlamydia</em>, <em>Mycoplasma</em>, <em>Ureaplasma</em>) em 1º jato matinal.</li>
+        </ul>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Toast de Notificação -->
+  <div id="toast">Resumo copiado com sucesso!</div>
+
+  <!-- =======================================================================
+       SCRIPTS & CONTROLES INTERATIVOS
+       ======================================================================= -->
+  <script>
+    const FRAMES = [{"index": 1, "filename": "1792243123c202.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Fígado - Lobo Hepático Direito", "time": "10:17:50", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Parênquima hepático homogêneo, ecotextura normal", "description": "Corte oblíquo subcostal mostrando o lobo direito do fígado com ecogenicidade e textura preservadas."}, {"index": 2, "filename": "1792243123c203.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Fígado - Lobo Hepático Esquerdo", "time": "10:17:50", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Contornos regulares, sem lesões focais", "description": "Avaliação do lobo esquerdo do fígado e transição epigástrica. Ausência de cistos ou nódulos."}, {"index": 3, "filename": "1792243133c204.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Rim Direito - Corte Longitudinal (RIM DIR.)", "time": "10:18:06", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Etiqueta RIM DIR. Relação córtico-medular preservada", "description": "Rim direito com parênquima e ecogenicidade preservados. Seio renal compacto sem dilatação pielocalicial."}, {"index": 4, "filename": "1792243141c205.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Rim Direito - Junção Córtico-Medular", "time": "10:18:22", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Diferenciação córtico-medular nítida, sem litíase", "description": "Visão detalhada do polo superior e médio do rim direito, afastando cálculo ou hidronefrose."}, {"index": 5, "filename": "1792243152c206.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Hilo Hepático - Doppler Colorido dos Vasos Portais", "time": "10:18:41", "probe": "C5-1 Convexo (25Hz)", "mode": "Doppler Colorido", "depth": "16 cm", "calipers": "Fluxo hepatopétalo pérvio, sem turbulência", "description": "Doppler colorido no hilo hepático demonstrando permeabilidade normal da veia porta e artéria hepática."}, {"index": 6, "filename": "1792243161c207.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Vesícula Biliar - Parede e Luz", "time": "10:18:59", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Paredes finas e lisas, conteúdo anecóico alitiásico", "description": "Vesícula biliar bem distendida, conteúdo homogêneo, sem cálculos ou pólipos parietais."}, {"index": 7, "filename": "1792243172c208.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Vias Biliares & Colédoco", "time": "10:19:15", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Vias biliares intra e extra-hepáticas sem ectasia", "description": "Colédoco proximal de calibre normal, sem imagens de coledocolitíase."}, {"index": 8, "filename": "1792243178c209.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Pâncreas - Topografia Epigástrica", "time": "10:19:30", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Cabeça, corpo e cauda com ecotextura homogênea", "description": "Região pancreática com contornos regulares e ducto de Wirsung não dilatado."}, {"index": 9, "filename": "1792243184c20a.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Baço - Parênquima e Dimensões", "time": "10:19:44", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Volume e textura normais, sem esplenomegalia", "description": "Corte intercostal esquerdo exibindo o baço de dimensões anatômicas e padrão ecogênico típico."}, {"index": 10, "filename": "1792243195c20c.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Rim Esquerdo - Corte Longitudinal", "time": "10:20:00", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Dimensões e espessura cortical preservadas", "description": "Rim esquerdo de contornos lisos, sem ectasia do sistema coletor."}, {"index": 11, "filename": "1792243208c20e.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Rim Esquerdo - Corte Transversal", "time": "10:20:15", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Complexo central compacto bilateralmente", "description": "Transversal do hilo renal esquerdo, demonstrando ausência de massas ou cistos."}, {"index": 12, "filename": "1792243217c20f.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Bexiga Urinária - Corte Transversal", "time": "10:20:30", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Paredes finas (< 3mm), conteúdo anecóico límpido", "description": "Bexiga com boa repleção fisiológica, sem espessamento parietal, traves ou divertículos."}, {"index": 13, "filename": "1792243221c210.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Bexiga Urinária - Corte Sagital / Longitudinal", "time": "10:20:41", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Morfologia e capacidade preservadas", "description": "Plano longitudinal da bexiga urinária demonstrando base e trígono vesical sem lesões vegetantes."}, {"index": 14, "filename": "1792243236c213.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Retroperitônio & Grandes Vasos", "time": "10:20:55", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Aorta abdominal e VCI pérvias de calibres normais", "description": "Varredura retroperitoneal sem adenomegalias periaórticas ou ectasias aneurismáticas."}, {"index": 15, "filename": "1792243245c214.jpg", "series": "abdomen", "series_name": "Abdômen Total", "title": "Fundo Vesical / Pélvis Masculina", "time": "10:21:05", "probe": "C5-1 Convexo (25Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "16 cm", "calipers": "Base vesical sem protrusão prostática intravesical exuberante", "description": "Corte pélvico suprapúbico inferior mostrando o assoalho vesical livre de coágulos ou cálculos."}, {"index": 16, "filename": "1792243295c217.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Bolsa Testicular - Visão Panorâmica Comparativa", "time": "10:20:47", "probe": "eL18-4 Linear (58Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "3.5 cm", "calipers": "Comparativo simultâneo de ambos os testículos", "description": "Varredura transversal simultânea mostrando simetria textural e redução volumétrica bilateral difusa."}, {"index": 17, "filename": "1792243315c218.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Testículo Esquerdo - Diâmetros Longitudinal e AP", "time": "10:21:07", "probe": "eL18-4 Linear (58Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "3.5 cm", "calipers": "Dist 1: 3,29 cm | Dist 2: 1,78 cm (TESTICULO ESQ.)", "description": "Medição dos eixos longitudinal (32,9 mm) e anteroposterior (17,8 mm) do testículo esquerdo."}, {"index": 18, "filename": "1792243323c219.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Testículo Esquerdo - Volumetria Computada (07,6 cm³)", "time": "10:21:15", "probe": "eL18-4 Linear (58Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "3.5 cm", "calipers": "Dist 1: 3,29 cm | Dist 2: 1,78 cm | Dist 3: 2,50 cm | Volume: 7,66 ml (7,6 cm³)", "description": "Cálculo volumétrico elipsoide tridimensional do testículo esquerdo: 7,66 ml. Diagnóstico: Testículo hipotrófico (ref normal: 12 a 25 cm³)."}, {"index": 19, "filename": "1792243331c21b.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Epidídimo Esquerdo - Cabeça e Corpo", "time": "10:21:28", "probe": "eL18-4 Linear (58Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "3.5 cm", "calipers": "Morfologia e ecogenicidade preservadas, sem cistos", "description": "Avaliação do epidídimo esquerdo sem sinais de epididimite, espessamento ou espermatocele."}, {"index": 20, "filename": "1792243337c21c.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Testículo Esquerdo - Perfusão ao Doppler Colorido", "time": "10:21:35", "probe": "eL18-4 Linear (10Hz)", "mode": "Doppler Colorido", "depth": "3.5 cm", "calipers": "Vascularização intraparenquimatosa simétrica e fisiológica", "description": "Doppler colorido confirmando adequada perfusão testicular esquerda sem áreas de isquemia ou hiperfluxo inflamatório focal (orquite ausente)."}, {"index": 21, "filename": "1792243352c21d.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Testículo Direito - Diâmetros Longitudinal e AP", "time": "10:21:45", "probe": "eL18-4 Linear (58Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "3.5 cm", "calipers": "Dist 1: 3,66 cm | Dist 2: 1,54 cm (TESTICULO DIR.)", "description": "Medição dos eixos longitudinal (36,6 mm) e anteroposterior (15,4 mm) do testículo direito."}, {"index": 22, "filename": "1792243359c21e.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Testículo Direito - Volumetria Computada (07,0 cm³)", "time": "10:21:52", "probe": "eL18-4 Linear (58Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "3.5 cm", "calipers": "Dist 1: 3,66 cm | Dist 2: 1,54 cm | Dist 3: 2,37 cm | Volume: 7,00 ml (7,0 cm³)", "description": "Cálculo volumétrico do testículo direito: 7,00 ml. Diagnóstico: Hipotrofia testicular direita acentuada (ref normal: 12 a 25 cm³)."}, {"index": 23, "filename": "1792243375c220.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Epidídimo Direito - Cabeça e Corpo", "time": "10:22:05", "probe": "eL18-4 Linear (58Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "3.5 cm", "calipers": "Epidídimo íntegro, sem coleções ou hidrocele", "description": "Epidídimo direito homogêneo e sem sinais de inflamação aguda ou ectasia tubular."}, {"index": 24, "filename": "1792243383c221.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Testículo Direito - Perfusão ao Doppler Colorido", "time": "10:22:15", "probe": "eL18-4 Linear (10Hz)", "mode": "Doppler Colorido", "depth": "3.5 cm", "calipers": "Fluxo vascular preservado e homogêneo", "description": "Doppler colorido comprovando vascularização intraparenquimatosa normal e simétrica à esquerda."}, {"index": 25, "filename": "1792243398c222.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Plexo Pampiniforme Direito - Repouso (1,4 mm)", "time": "10:22:31", "probe": "eL18-4 Linear (51Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "3.5 cm", "calipers": "Dist: 0,148 cm (1,4 mm) (REPOUSO DIR.)", "description": "Calibre venoso em repouso de 1,4 mm à direita (dentro do limite normal < 2,0 mm)."}, {"index": 26, "filename": "1792243409c224.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Plexo Pampiniforme Esquerdo - Repouso (1,7 mm)", "time": "10:22:42", "probe": "eL18-4 Linear (51Hz)", "mode": "Modo-B (Escala de Cinza)", "depth": "3.5 cm", "calipers": "Dist: 0,170 cm (1,7 mm) (REPOUSO ESQ.)", "description": "Calibre venoso em repouso de 1,7 mm à esquerda (calibre normal < 2,0 mm)."}, {"index": 27, "filename": "1792243428c225.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Doppler com Manobra de Valsalva - Esquerdo (2,3 mm)", "time": "10:23:00", "probe": "eL18-4 Linear (10Hz)", "mode": "Doppler Colorido com Valsalva", "depth": "3.5 cm", "calipers": "Dist: 0,236 cm (2,3 mm) (VALSALVA ESQ.)", "description": "Doppler sob Valsalva à esquerda: aumento de calibre fisiológico para 2,3 mm sem refluxo patológico contínuo. Conclusão: sem varicocele."}, {"index": 28, "filename": "1792243446c227.jpg", "series": "testiculo", "series_name": "Bolsa Testicular & Doppler", "title": "Doppler com Manobra de Valsalva - Direito (1,8 mm)", "time": "10:23:19", "probe": "eL18-4 Linear (10Hz)", "mode": "Doppler Colorido com Valsalva", "depth": "3.5 cm", "calipers": "Dist: 0,180 cm (1,8 mm) (VALSALVA DIR.)", "description": "Doppler sob Valsalva à direita: calibre máximo de 1,8 mm, sem inversão de fluxo. Varicocele descartada bilateralmente."}];
+    const PSA_SERIES = [{"date": "28/09/2023", "total": 0.47, "free": 0.35, "ratio": 74.47, "status": "normal"}, {"date": "06/12/2024", "total": 0.6, "free": null, "ratio": null, "status": "normal"}, {"date": "18/03/2025", "total": 0.46, "free": null, "ratio": null, "status": "normal"}, {"date": "22/07/2025", "total": 0.94, "free": null, "ratio": null, "status": "normal"}, {"date": "09/11/2026", "total": 7.94, "free": 1.37, "ratio": 17.25, "status": "critical"}];
+    const HORM_SERIES = [{"date": "08/05/2023", "testo": 362.3, "lh": null, "fsh": null, "e2": null, "prl": 10.91}, {"date": "06/12/2024", "testo": 1605.9, "lh": null, "fsh": null, "e2": 88.5, "prl": 44.39}, {"date": "18/03/2025", "testo": 1199.6, "lh": null, "fsh": null, "e2": 55.9, "prl": 20.64}, {"date": "22/07/2025", "testo": 845.9, "lh": 0.05, "fsh": 0.4, "e2": 54.5, "prl": 16.78}, {"date": "07/04/2026", "testo": 1252.2, "lh": null, "fsh": null, "e2": null, "prl": null}, {"date": "09/11/2026", "testo": 317.7, "lh": 3.6, "fsh": null, "e2": 17.1, "prl": 8.49}];
+    const LEUKO_SERIES = [{"date": "08/05/2023", "leuko": 7160, "lympho": 2885, "lympho_pct": 40.3}, {"date": "28/09/2023", "leuko": 8790, "lympho": 4070, "lympho_pct": 46.3}, {"date": "06/12/2024", "leuko": 14920, "lympho": 4759, "lympho_pct": 31.9}, {"date": "18/03/2025", "leuko": 10140, "lympho": 3610, "lympho_pct": 35.6}, {"date": "22/07/2025", "leuko": 11280, "lympho": 3677, "lympho_pct": 32.6}, {"date": "07/04/2026", "leuko": 8070, "lympho": 3365, "lympho_pct": 41.7}, {"date": "09/11/2026", "leuko": 10770, "lympho": 4890, "lympho_pct": 45.4}];
+    const METAB_SERIES = [{"date": "08/05/2023", "glucose": 87, "hba1c": null, "creatinine": 1.06}, {"date": "28/11/2023", "glucose": null, "hba1c": 4.9, "creatinine": null}, {"date": "06/12/2024", "glucose": 60, "hba1c": null, "creatinine": 1.1}, {"date": "18/03/2025", "glucose": 87, "hba1c": null, "creatinine": 1.01}, {"date": "22/07/2025", "glucose": 85, "hba1c": 5.2, "creatinine": 0.96}, {"date": "07/04/2026", "glucose": 83, "hba1c": 5.2, "creatinine": 1.08}, {"date": "09/11/2026", "glucose": 84, "hba1c": 5.7, "creatinine": 0.9}];
+    const LAB_MATRIX = [{"name": "PSA Total", "category": "psa", "unit": "ng/mL", "ref": "Inferior a 4,00 ng/mL (Para 29 anos, habitual < 1,00 ng/mL)", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "0,47", "status": "normal"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "0,60", "status": "normal"}, "2025-03-18": {"val": "0,46", "status": "normal"}, "2025-07-22": {"val": "0,94", "status": "normal"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "7,94", "status": "critical"}}, "notes": "Elevação aguda e abrupta (+7,00 ng/mL em 15 meses; +745%). Salto incompatível com evolução indolente clássica, fortemente sugestivo de processo inflamatório/reativo/congestivo agudo."}, {"name": "PSA Livre", "category": "psa", "unit": "ng/mL", "ref": "Não há intervalos de referência isolados na literatura", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "0,35", "status": "normal"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "1,37", "status": "attention"}}, "notes": "Acompanhou a elevação do PSA Total, subindo de 0,35 para 1,37 ng/mL."}, {"name": "Relação PSA Livre / PSA Total", "category": "psa", "unit": "%", "ref": "> 20-25%: Favorável / Benigno | 15-25%: Zona Intermediária | < 10-15%: Suspeito", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "74,47 %", "status": "normal"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "17,25 %", "status": "attention"}}, "notes": "O laboratório OMITIU o cálculo da relação. Em 2023 era 74,47% (francamente benigna). Em 2026 encontra-se em 17,25% (faixa cinzenta/intermediária). Em jovens sem HBP, inflamações agudas podem transitar nessa faixa."}, {"name": "Testosterona Total", "category": "hormonios", "unit": "ng/dL", "ref": "Homens 22-49 anos: 164,94 a 753,38 ng/dL", "values": {"2023-05-08": {"val": "362,3", "status": "normal"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "1605,9", "status": "high"}, "2025-03-18": {"val": "1199,6", "status": "high"}, "2025-07-22": {"val": "845,9", "status": "high"}, "2026-04-07": {"val": "1252,2", "status": "high"}, "2026-11-09": {"val": "317,7", "status": "normal"}}, "notes": "Histórico documentado de níveis suprafisiológicos (1.200 a 1.605 ng/dL). Queda abrupta recente para 317,7 ng/dL (-934,5 ng/dL em relação a abril/2026), sinalizando término de ciclo/descontinuação androgênica."}, {"name": "Testosterona Livre Calculada", "category": "hormonios", "unit": "ng/dL", "ref": "Homens 17-40 anos: 3,4 a 24,6 ng/dL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "56,02", "status": "high"}, "2025-03-18": {"val": "39,78", "status": "high"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Marcadamente elevada durante os períodos de testosterona suprafisiológica."}, {"name": "Testosterona Biodisponível", "category": "hormonios", "unit": "ng/dL", "ref": "Homens 17-40 anos: 82 a 626 ng/dL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "1312,86", "status": "high"}, "2025-03-18": {"val": "932,24", "status": "high"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Níveis mais que o dobro do limite superior de referência em dez/2024."}, {"name": "SHBG (Globulina Ligadora de Hormônios)", "category": "hormonios", "unit": "nmol/L", "ref": "Homens: 10,00 a 57,00 nmol/L", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "15,40", "status": "normal"}, "2025-03-18": {"val": "16,00", "status": "normal"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Próxima ao limite inferior da normalidade, padrão típico do uso de andrógenos exógenos."}, {"name": "Estradiol (E2)", "category": "hormonios", "unit": "pg/mL", "ref": "Homens > 21 anos: até 39,8 pg/mL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "88,5", "status": "high"}, "2025-03-18": {"val": "55,9", "status": "high"}, "2025-07-22": {"val": "54,5", "status": "high"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "17,1", "status": "normal"}}, "notes": "Aromatização intensa evidente em 2024/2025 (pico de 88,5 pg/mL). Normalizou para 17,1 pg/mL em nov/2026 acompanhando a queda da testosterona."}, {"name": "LH (Hormônio Luteinizante)", "category": "hormonios", "unit": "mUI/mL", "ref": "Adultos: 1,5 a 9,3 mUI/mL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "< 0,1", "status": "low"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "3,6", "status": "normal"}}, "notes": "Totalmente suprimido (< 0,1) em jul/2025 por feedback negativo androgênico. Em nov/2026 recuperou para 3,6 mUI/mL, indicando reativação do eixo hipotálamo-hipófise-gonadal."}, {"name": "FSH (Hormônio Folículo Estimulante)", "category": "hormonios", "unit": "mUI/mL", "ref": "Homens: 1,4 a 18,1 mUI/mL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "0,4", "status": "low"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Suprimido em 0,4 mUI/mL em jul/2025. OMITIDO pelo laudo evolutivo do portal."}, {"name": "DHT (Dihidrotestosterona)", "category": "hormonios", "unit": "ng/dL", "ref": "Homens: 11,2 a 95,5 ng/dL (ou 143 a 842 pg/mL)", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "55,0", "status": "normal"}, "2025-03-18": {"val": "52,7", "status": "normal"}, "2025-07-22": {"val": "65,2", "status": "normal"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Valores em soro normais. OMITIDO pelo laudo evolutivo do portal em todas as ocasiões."}, {"name": "Prolactina", "category": "hormonios", "unit": "ng/mL", "ref": "Homens: 2,10 a 17,70 ng/mL", "values": {"2023-05-08": {"val": "10,91", "status": "normal"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "44,39", "status": "high"}, "2025-03-18": {"val": "20,64", "status": "high"}, "2025-07-22": {"val": "16,78", "status": "normal"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "8,49", "status": "normal"}}, "notes": "Hiperprolactinemia importante em dez/2024 (44,39 ng/mL), normalizando progressivamente até 8,49 ng/mL."}, {"name": "Progesterona", "category": "hormonios", "unit": "ng/mL", "ref": "Homens: 0,28 a 1,22 ng/mL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "0,75", "status": "normal"}, "2025-03-18": {"val": "0,76", "status": "normal"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Fisiológica e estável."}, {"name": "Leucócitos Totais", "category": "hemograma", "unit": "/µL", "ref": "4.000 a 10.000 /µL", "values": {"2023-05-08": {"val": "7.160", "status": "normal"}, "2023-09-28": {"val": "8.790", "status": "normal"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "14.920", "status": "high"}, "2025-03-18": {"val": "10.140", "status": "high"}, "2025-07-22": {"val": "11.280", "status": "high"}, "2026-04-07": {"val": "8.070", "status": "normal"}, "2026-11-09": {"val": "10.770", "status": "high"}}, "notes": "Leucocitose documentada em nov/2026 (10.770 /µL) concomitante com o pico de PSA, apontando para processo inflamatório ou reacional sistêmico."}, {"name": "Linfócitos Absolutos", "category": "hemograma", "unit": "/µL", "ref": "1.000 a 3.000 /µL", "values": {"2023-05-08": {"val": "2.885", "status": "normal"}, "2023-09-28": {"val": "4.070", "status": "high"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "4.759", "status": "high"}, "2025-03-18": {"val": "3.610", "status": "high"}, "2025-07-22": {"val": "3.677", "status": "high"}, "2026-04-07": {"val": "3.365", "status": "high"}, "2026-11-09": {"val": "4.890", "status": "high"}}, "notes": "Linfocitose expressiva absoluta (4.890 /µL) e relativa (45,4%) em 09/11/2026. Dado clínico crucial que reforça hipótese inflamatória/infecciosa subaguda ou reativa."}, {"name": "Linfócitos (%)", "category": "hemograma", "unit": "%", "ref": "20,0 a 40,0 %", "values": {"2023-05-08": {"val": "40,3 %", "status": "high"}, "2023-09-28": {"val": "46,3 %", "status": "high"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "31,9 %", "status": "normal"}, "2025-03-18": {"val": "35,6 %", "status": "normal"}, "2025-07-22": {"val": "32,6 %", "status": "normal"}, "2026-04-07": {"val": "41,7 %", "status": "high"}, "2026-11-09": {"val": "45,4 %", "status": "high"}}, "notes": "Inversão leucocitária relativa em nov/2026 (45,4% linfócitos vs 43,1% neutrófilos)."}, {"name": "Neutrófilos Absolutos", "category": "hemograma", "unit": "/µL", "ref": "1.800 a 7.800 /µL", "values": {"2023-05-08": {"val": "3.487", "status": "normal"}, "2023-09-28": {"val": "3.920", "status": "normal"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "8.803", "status": "high"}, "2025-03-18": {"val": "5.303", "status": "normal"}, "2025-07-22": {"val": "6.441", "status": "normal"}, "2026-04-07": {"val": "4.011", "status": "normal"}, "2026-11-09": {"val": "4.642", "status": "normal"}}, "notes": "Neutrofilia isolada apenas em dez/2024 (8.803 /µL)."}, {"name": "Hemoglobina", "category": "hemograma", "unit": "g/dL", "ref": "13,0 a 17,0 g/dL", "values": {"2023-05-08": {"val": "15,0", "status": "normal"}, "2023-09-28": {"val": "14,0", "status": "normal"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "15,4", "status": "normal"}, "2025-03-18": {"val": "16,2", "status": "normal"}, "2025-07-22": {"val": "15,3", "status": "normal"}, "2026-04-07": {"val": "15,8", "status": "normal"}, "2026-11-09": {"val": "14,7", "status": "normal"}}, "notes": "Série vermelha estável em todo o seguimento."}, {"name": "Hematócrito", "category": "hemograma", "unit": "%", "ref": "40,0 a 50,0 %", "values": {"2023-05-08": {"val": "43,2 %", "status": "normal"}, "2023-09-28": {"val": "40,3 %", "status": "normal"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "44,7 %", "status": "normal"}, "2025-03-18": {"val": "46,5 %", "status": "normal"}, "2025-07-22": {"val": "44,3 %", "status": "normal"}, "2026-04-07": {"val": "45,7 %", "status": "normal"}, "2026-11-09": {"val": "44,5 %", "status": "normal"}}, "notes": "Sem evidência de eritrocitose descompensada."}, {"name": "Plaquetas", "category": "hemograma", "unit": "/µL", "ref": "150.000 a 450.000 /µL", "values": {"2023-05-08": {"val": "278.000", "status": "normal"}, "2023-09-28": {"val": "296.000", "status": "normal"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "342.000", "status": "normal"}, "2025-03-18": {"val": "301.000", "status": "normal"}, "2025-07-22": {"val": "302.000", "status": "normal"}, "2026-04-07": {"val": "296.000", "status": "normal"}, "2026-11-09": {"val": "309.000", "status": "normal"}}, "notes": "Plaquetas totalmente normais e normofuncionantes."}, {"name": "TSH Ultrassensível", "category": "tireoide", "unit": "µUI/mL", "ref": "0,40 a 4,30 µUI/mL", "values": {"2023-05-08": {"val": "2,86", "status": "normal"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "6,20", "status": "high"}, "2025-03-18": {"val": "2,97", "status": "normal"}, "2025-07-22": {"val": "1,23", "status": "normal"}, "2026-04-07": {"val": "2,70", "status": "normal"}, "2026-11-09": {"val": "3,79", "status": "normal"}}, "notes": "Pico transitório em dez/2024 (6,20 µUI/mL) coincidindo com hiperprolactinemia e testosterona máxima. Estável em nov/2026."}, {"name": "T4 Livre", "category": "tireoide", "unit": "ng/dL", "ref": "0,89 a 1,76 ng/dL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "1,63", "status": "normal"}, "2026-11-09": {"val": "1,54", "status": "normal"}}, "notes": "Eutireoidismo funcional confirmado."}, {"name": "TGO (AST)", "category": "hepatica", "unit": "U/L", "ref": "Inferior a 34 U/L", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "67", "status": "high"}, "2023-11-28": {"val": "28", "status": "normal"}, "2024-12-06": {"val": "26", "status": "normal"}, "2025-03-18": {"val": "34", "status": "normal"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Elevação aguda em set/2023 com normalização rápida no controle de nov/2023."}, {"name": "TGP (ALT)", "category": "hepatica", "unit": "U/L", "ref": "10 a 49 U/L", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "63", "status": "high"}, "2023-11-28": {"val": "37", "status": "normal"}, "2024-12-06": {"val": "45", "status": "normal"}, "2025-03-18": {"val": "55", "status": "high"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Pequenas flutuações compatíveis com treinamento físico ou sobrecarga hepática transitória."}, {"name": "Gama-Glutamil Transferase (GGT)", "category": "hepatica", "unit": "U/L", "ref": "Inferior a 73 U/L", "values": {"2023-05-08": {"val": "57", "status": "normal"}, "2023-09-28": {"val": "76", "status": "high"}, "2023-11-28": {"val": "50", "status": "normal"}, "2024-12-06": {"val": "41", "status": "normal"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Normal em todas as análises subsequentes."}, {"name": "Fosfatase Alcalina", "category": "hepatica", "unit": "U/L", "ref": "46 a 116 U/L", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "76", "status": "normal"}, "2023-11-28": {"val": "100", "status": "normal"}, "2024-12-06": {"val": "76", "status": "normal"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Normal e sem colestase."}, {"name": "Bilirrubinas (Total / Direta / Indireta)", "category": "hepatica", "unit": "mg/dL", "ref": "Total: 0,30 a 1,20 | Direta: até 0,30 | Indireta: até 0,90", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "0,78 / 0,34 / 0,44", "status": "attention"}, "2023-11-28": {"val": "1,50 / 0,66 / 0,84", "status": "high"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Elevação transitória de bilirrubinas em nov/2023, com ecografia recente descartando litíase biliar ou ectasia."}, {"name": "Creatinina", "category": "renal", "unit": "mg/dL", "ref": "0,70 a 1,30 mg/dL", "values": {"2023-05-08": {"val": "1,06", "status": "normal"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "1,10", "status": "normal"}, "2025-03-18": {"val": "1,01", "status": "normal"}, "2025-07-22": {"val": "0,96", "status": "normal"}, "2026-04-07": {"val": "1,08", "status": "normal"}, "2026-11-09": {"val": "0,90", "status": "normal"}}, "notes": "Excelente estabilidade da função renal sérica."}, {"name": "eGFR (Taxa de Filtração Glomerular)", "category": "renal", "unit": "mL/min/1,73m²", "ref": "Superior a 90 mL/min/1,73m²", "values": {"2023-05-08": {"val": "> 90", "status": "normal"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "> 90", "status": "normal"}, "2025-03-18": {"val": "> 90", "status": "normal"}, "2025-07-22": {"val": "> 90", "status": "normal"}, "2026-04-07": {"val": "> 90", "status": "normal"}, "2026-11-09": {"val": "> 90", "status": "normal"}}, "notes": "Filtração glomerular perfeita (CKD-EPI 2021)."}, {"name": "Glicose de Jejum", "category": "metabolico", "unit": "mg/dL", "ref": "70 a 99 mg/dL", "values": {"2023-05-08": {"val": "87", "status": "normal"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "60", "status": "low"}, "2025-03-18": {"val": "87", "status": "normal"}, "2025-07-22": {"val": "85", "status": "normal"}, "2026-04-07": {"val": "83", "status": "normal"}, "2026-11-09": {"val": "84", "status": "normal"}}, "notes": "Normoglicêmico em jejum."}, {"name": "Hemoglobina Glicada (HbA1c)", "category": "metabolico", "unit": "%", "ref": "Normal: < 5,7% | Risco Aumentado (Pré-Diabetes): 5,7 a 6,4% | Diabetes: >= 6,5%", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "4,9 %", "status": "normal"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "5,2 %", "status": "normal"}, "2026-04-07": {"val": "5,2 %", "status": "normal"}, "2026-11-09": {"val": "5,7 %", "status": "attention"}}, "notes": "Aumento progressivo documentado (4,9% -> 5,2% -> 5,7%). Atingiu o limite de alerta de risco para pré-diabetes em nov/2026."}, {"name": "Insulina Basal & HOMA-IR", "category": "metabolico", "unit": "µUI/mL", "ref": "Insulina: 2,5 a 13,1 µUI/mL | HOMA-IR: Inferior a 2,70", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "4,6 (HOMA não calc)", "status": "normal"}, "2025-03-18": {"val": "14,2 (HOMA-IR: 3,05)", "status": "high"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Resistência insulínica documentada em mar/2025 (HOMA-IR 3,05). OMITIDO pelo laudo evolutivo."}, {"name": "Colesterol Total", "category": "metabolico", "unit": "mg/dL", "ref": "Inferior a 190 mg/dL", "values": {"2023-05-08": {"val": "105", "status": "normal"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "148", "status": "normal"}, "2025-03-18": {"val": "111", "status": "normal"}, "2025-07-22": {"val": "133", "status": "normal"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Perfil lipídico excelente em todo o período."}, {"name": "HDL - Colesterol", "category": "metabolico", "unit": "mg/dL", "ref": "Superior a 40 mg/dL", "values": {"2023-05-08": {"val": "39", "status": "attention"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "49", "status": "normal"}, "2025-03-18": {"val": "43", "status": "normal"}, "2025-07-22": {"val": "43", "status": "normal"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Adequado (> 40 mg/dL)."}, {"name": "LDL - Colesterol (calculado)", "category": "metabolico", "unit": "mg/dL", "ref": "Meta baixo risco: < 130 | Risco intermediário: < 100", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "80", "status": "normal"}, "2025-03-18": {"val": "48", "status": "normal"}, "2025-07-22": {"val": "76", "status": "normal"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Ótimos níveis de LDL."}, {"name": "Triglicérides", "category": "metabolico", "unit": "mg/dL", "ref": "Inferior a 150 mg/dL", "values": {"2023-05-08": {"val": "83", "status": "normal"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "108", "status": "normal"}, "2025-03-18": {"val": "99", "status": "normal"}, "2025-07-22": {"val": "68", "status": "normal"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Normotrigliceridemia contínua."}, {"name": "Ferritina", "category": "vitaminas", "unit": "ng/mL", "ref": "22,0 a 322,0 ng/mL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "336,4", "status": "high"}, "2025-03-18": {"val": "229,9", "status": "normal"}, "2025-07-22": {"val": "464,4", "status": "high"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Ferritina elevada (464,4 ng/mL em jul/2025). Reagente de fase aguda / inflamatória. OMITIDO pelo laudo evolutivo."}, {"name": "25 OH Vitamina D", "category": "vitaminas", "unit": "ng/mL", "ref": "Superior a 20 ng/mL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "19,7", "status": "low"}, "2025-03-18": {"val": "23,9", "status": "normal"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Hipovitaminose D leve em dez/2024 corrigida em mar/2025. OMITIDO pelo laudo evolutivo."}, {"name": "Vitamina B-12", "category": "vitaminas", "unit": "pg/mL", "ref": "223,0 a 672,0 pg/mL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "523,0", "status": "normal"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "638,0", "status": "normal"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "-", "status": "none"}}, "notes": "Valores ótimos de B12. OMITIDO pelo laudo evolutivo."}, {"name": "Cultura de Urina (Jato Médio)", "category": "urina", "unit": "-", "ref": "Negativo (Sem crescimento bacteriano)", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "-", "status": "none"}, "2026-11-09": {"val": "Negativo", "status": "normal"}}, "notes": "Urocultura NEGATIVA em 09/11/2026. Importante: cultura padrão não detecta Chlamydia, Mycoplasma, Ureaplasma ou prostatites abacterianas."}, {"name": "Parcial de Urina (Leucócitos)", "category": "urina", "unit": "/mL", "ref": "Inferior a 25.000 /mL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "1.600", "status": "normal"}, "2026-11-09": {"val": "1.000 (em 12/11)", "status": "normal"}}, "notes": "Sem leucocitúria / piúria detectável na urina amostrada."}, {"name": "Parcial de Urina (Hemácias)", "category": "urina", "unit": "/mL", "ref": "Inferior a 23.000 /mL", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "3.400", "status": "normal"}, "2026-11-09": {"val": "1.400 (em 12/11)", "status": "normal"}}, "notes": "Sem hematúria microscópica."}, {"name": "Parcial de Urina (Bactérias / Nitrito / Proteína)", "category": "urina", "unit": "-", "ref": "Bactérias < 1.200/µL; Proteína e Nitrito Negativos", "values": {"2023-05-08": {"val": "-", "status": "none"}, "2023-09-28": {"val": "-", "status": "none"}, "2023-11-28": {"val": "-", "status": "none"}, "2024-12-06": {"val": "-", "status": "none"}, "2025-03-18": {"val": "-", "status": "none"}, "2025-07-22": {"val": "-", "status": "none"}, "2026-04-07": {"val": "< 1.200 / Negativos", "status": "normal"}, "2026-11-09": {"val": "< 1.200 / Negativos", "status": "normal"}}, "notes": "Sedimento urinário limpo sem proteinúria ou glicosúria."}];
+    const LAB_CATEGORIES = [{"id": "psa", "name": "Próstata & Marcadores (PSA)", "badge": "Crítico"}, {"id": "hormonios", "name": "Hormônios & Eixo Gonadal", "badge": "Importante"}, {"id": "hemograma", "name": "Hemograma & Série Branca", "badge": "Atenção"}, {"id": "tireoide", "name": "Tireoide", "badge": "Normal"}, {"id": "hepatica", "name": "Função Hepática & Bilirrubinas", "badge": "Histórico"}, {"id": "renal", "name": "Função Renal & Filtração", "badge": "Preservada"}, {"id": "metabolico", "name": "Metabolismo, Glicose & Lipídios", "badge": "Atenção"}, {"id": "vitaminas", "name": "Vitaminas & Ferritina", "badge": "Histórico"}, {"id": "urina", "name": "Sumário de Urina & Cultura", "badge": "Normal"}];
+
+    let activeSeries = 'abdomen';
+    let filteredFrames = [];
+    let currentIdx = 0;
+    let zoom = 1;
+    let panX = 0, panY = 0;
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let isInverted = false;
+    let isPlaying = false;
+    let playInterval = null;
+    let viewMode = 'single'; // 'single' ou 'split'
+    let chartInstance = null;
+
+    // Inicialização
+    window.addEventListener('DOMContentLoaded', () => {
+      filterPacsSeries('abdomen');
+      initSplitDropdowns();
+      renderMatrixTable();
+      setTimeout(() => showChart('psa'), 120);
+      setupKeyboardShortcuts();
+      setupMouseWheelZoom();
+    });
+
+    // Navegação em Abas
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      const btn = Array.from(document.querySelectorAll('.nav-tab')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (btn) btn.classList.add('active');
+
+      document.getElementById(tabId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      if (tabId === 'tab-laboratorial' && !chartInstance) {
+        setTimeout(() => showChart('psa'), 100);
+      }
+    }
+
+    // Alternar Tema Escuro / Claro
+    function toggleTheme() {
+      document.body.classList.toggle('light-theme');
+      const isLight = document.body.classList.contains('light-theme');
+      document.getElementById('themeBtn').innerHTML = isLight ? '🌙 Modo Escuro' : '☀️ Modo Claro';
+      localStorage.setItem('user-theme', isLight ? 'light' : 'dark');
+      if (chartInstance) chartInstance.update();
+    }
+
+    // Copiar Resumo para WhatsApp / Prontuário
+    function copyDoctorSummary() {
+      const text = `DOSSIÊ CLÍNICO UROLÓGICO - PACIENTE ANONIMIZADO
+Prontuário: removido | Última Coleta: 09/11/2026
+
+1. PSA & CINÉTICA:
+- PSA Total Atual: 7,94 ng/mL (Basal 2023-2025: 0,46 a 0,60 ng/mL; aumento de +7,00 ng/mL em ~15 meses)
+- PSA Livre: 1,37 ng/mL | Relação Livre/Total: 17,25% (faixa intermediária 10-20%)
+- Velocidade de Elevação: ~5,4 ng/mL/ano (variação que exige confirmação e avaliação clínica)
+
+2. CORRELAÇÕES CLÍNICAS & LABORATORIAIS:
+- Leucograma: 10.770 /µL com Linfocitose marcada (4.890 /µL - 45,4%)
+- Urocultura Convencional: Negativa (não confirma nem exclui prostatite)
+- Eixo Hormonal: Queda recente de Testosterona (1.605 -> 317,7 ng/dL) com reativação do LH (3,6 mUI/mL)
+- Ultrassonografia (17/10/2026): Abdômen Total normal; Bolsa Testicular com Hipotrofia Bilateral (D: 7,0 cm³, E: 7,6 cm³); Doppler sem varicocele
+
+3. PONTOS PARA DISCUTIR COM O UROLOGISTA:
+- Repetição orientada de PSA Total e Livre, controlando fatores pré-analíticos
+- Necessidade de exame físico, imagem da próstata ou ressonância
+- Se há indicação de investigação de infecções conforme sintomas e exame clínico`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('toast');
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      }).catch(() => {
+        alert('Resumo copiado!');
+      });
+    }
+
+    // ==========================================
+    // CALCULADORAS UROLÓGICAS
+    // ==========================================
+    function updatePSAD(vol) {
+      document.getElementById('volDisplay').innerText = vol + ' cm³';
+      const psad = (7.94 / vol).toFixed(2);
+      const badge = document.getElementById('psadBadge');
+      badge.innerText = 'PSAD: ' + psad + ' ng/mL/cc';
+      
+      const exp = document.getElementById('psadExplanation');
+      if (psad > 0.15) {
+        badge.className = 'badge badge-alert';
+        exp.innerHTML = 'Com volume de ' + vol + ' cm³, a densidade é de <strong>' + psad + ' ng/mL/cc</strong> (acima do corte oncológico de 0,15). Isso reforça a indicação formal de mpMRI 3T para exclusão de lesões no mapa setorial.';
+      } else {
+        badge.className = 'badge badge-success';
+        exp.innerHTML = 'Com volume de ' + vol + ' cm³, a densidade é de <strong>' + psad + ' ng/mL/cc</strong> (abaixo do corte de 0,15).';
+      }
+    }
+
+    // ==========================================
+    // ESTAÇÃO PACS 2.0 (VIEWER & SPLIT VIEW)
+    // ==========================================
+    function filterPacsSeries(series) {
+      activeSeries = series;
+      document.getElementById('pacsBtnAbd').classList.toggle('active', series === 'abdomen');
+      document.getElementById('pacsBtnTest').classList.toggle('active', series === 'testiculo');
+      document.getElementById('pacsBtnAll').classList.toggle('active', series === 'all');
+
+      if (series === 'all') {
+        filteredFrames = FRAMES;
+      } else {
+        filteredFrames = FRAMES.filter(f => f.series === series);
+      }
+
+      currentIdx = 0;
+      renderPacsSidebar();
+      renderPacsView();
+    }
+
+    function renderPacsSidebar() {
+      const list = document.getElementById('pacsThumbList');
+      list.innerHTML = '';
+
+      filteredFrames.forEach((f, i) => {
+        const item = document.createElement('div');
+        item.className = 'pacs-thumb-item ' + (i === currentIdx ? 'active' : '');
+        item.onclick = () => selectPacsFrame(i);
+        item.innerHTML = `
+          <img class="pacs-thumb-img" src="originais_publicos/imagens/Imagens_Exames_1/${f.filename}" alt="thumb" loading="lazy">
+          <div class="pacs-thumb-meta">
+            <div class="pacs-thumb-title">#${f.index} ${f.title}</div>
+            <div class="pacs-thumb-sub">
+              <span class="tag-probe">${f.mode.includes('Doppler') ? 'Doppler' : 'Modo-B'}</span>
+              <span>${f.time}</span>
+            </div>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function selectPacsFrame(i) {
+      currentIdx = i;
+      renderPacsView();
+      updatePacsSidebarActive();
+    }
+
+    function updatePacsSidebarActive() {
+      const items = document.querySelectorAll('.pacs-thumb-item');
+      items.forEach((it, idx) => {
+        it.classList.toggle('active', idx === currentIdx);
+      });
+      if (items[currentIdx]) {
+        items[currentIdx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function renderPacsView() {
+      const f = filteredFrames[currentIdx];
+      if (!f) return;
+
+      const img = document.getElementById('pacsImg');
+      img.src = 'originais_publicos/imagens/Imagens_Exames_1/' + f.filename;
+
+      document.getElementById('pacsOverlayTitle').innerText = '#' + f.index + ' ' + f.title;
+      document.getElementById('pacsOverlaySub').innerText = f.probe + ' | ' + f.time + ' | Profundidade: ' + f.depth;
+      document.getElementById('pacsOverlayCaliper').innerText = f.calipers;
+      document.getElementById('pacsOverlayDesc').innerText = f.description;
+      document.getElementById('pacsCounter').innerText = (currentIdx + 1) + ' / ' + filteredFrames.length;
+
+      pacsApplyTransform();
+    }
+
+    function pacsNext() {
+      if (currentIdx < filteredFrames.length - 1) {
+        currentIdx++;
+      } else {
+        currentIdx = 0;
+      }
+      renderPacsView();
+      updatePacsSidebarActive();
+    }
+
+    function pacsPrev() {
+      if (currentIdx > 0) {
+        currentIdx--;
+      } else {
+        currentIdx = filteredFrames.length - 1;
+      }
+      renderPacsView();
+      updatePacsSidebarActive();
+    }
+
+    function pacsZoomIn() {
+      zoom = Math.min(zoom + 0.25, 3.5);
+      pacsApplyTransform();
+    }
+
+    function pacsZoomOut() {
+      zoom = Math.max(zoom - 0.25, 0.75);
+      pacsApplyTransform();
+    }
+
+    function pacsFit() {
+      zoom = 1;
+      panX = 0;
+      panY = 0;
+      pacsApplyTransform();
+    }
+
+    function pacsReset() {
+      zoom = 1;
+      panX = 0;
+      panY = 0;
+      isInverted = false;
+      document.getElementById('pacsContrast').value = 100;
+      document.getElementById('pacsInvertBtn').classList.remove('active');
+      pacsUpdateFilters();
+      pacsApplyTransform();
+    }
+
+    function pacsToggleInvert() {
+      isInverted = !isInverted;
+      document.getElementById('pacsInvertBtn').classList.toggle('active', isInverted);
+      pacsUpdateFilters();
+    }
+
+    function pacsUpdateFilters() {
+      const contrast = document.getElementById('pacsContrast').value;
+      const img = document.getElementById('pacsImg');
+      const invertVal = isInverted ? 1 : 0;
+      img.style.filter = 'contrast(' + contrast + '%) invert(' + invertVal + ')';
+    }
+
+    function pacsApplyTransform() {
+      const stage = document.getElementById('pacsStage');
+      stage.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoom + ')';
+    }
+
+    // Cine Loop / Play
+    function togglePacsPlay() {
+      isPlaying = !isPlaying;
+      const btn = document.getElementById('pacsPlayBtn');
+      if (isPlaying) {
+        btn.innerText = '⏸ Pausar';
+        btn.classList.add('active');
+        playInterval = setInterval(pacsNext, 1200);
+      } else {
+        btn.innerText = '▶ Cine';
+        btn.classList.remove('active');
+        clearInterval(playInterval);
+      }
+    }
+
+    // Tela Cheia (Fullscreen)
+    function pacsFullscreen() {
+      const container = document.getElementById('pacsContainer');
+      if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => alert(err.message));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Atalhos de Teclado
+    function setupKeyboardShortcuts() {
+      window.addEventListener('keydown', (e) => {
+        // Somente se a aba PACS estiver ativa
+        if (!document.getElementById('tab-pacs').classList.contains('active')) return;
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          pacsNext();
+        } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          pacsPrev();
+        } else if (e.key === '+' || e.key === '=') {
+          pacsZoomIn();
+        } else if (e.key === '-' || e.key === '_') {
+          pacsZoomOut();
+        } else if (e.key === 'r' || e.key === 'R') {
+          pacsReset();
+        } else if (e.key === 'i' || e.key === 'I') {
+          pacsToggleInvert();
+        } else if (e.key === 'f' || e.key === 'F') {
+          pacsFullscreen();
+        } else if (e.key === ' ') {
+          e.preventDefault();
+          togglePacsPlay();
+        }
+      });
+    }
+
+    // Zoom com Roda do Mouse
+    function setupMouseWheelZoom() {
+      const viewport = document.getElementById('pacsSingleViewport');
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          zoom = Math.min(zoom + 0.15, 3.5);
+        } else {
+          zoom = Math.max(zoom - 0.15, 0.75);
+        }
+        pacsApplyTransform();
+      }, { passive: false });
+
+      // Drag to pan
+      viewport.addEventListener('mousedown', (e) => {
+        if (zoom <= 1) return;
+        isDragging = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        pacsApplyTransform();
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+    }
+
+    // ==========================================
+    // SPLIT VIEW (MODO COMPARADOR LADO A LADO)
+    // ==========================================
+    function setPacsViewMode(mode) {
+      viewMode = mode;
+      document.getElementById('btnViewSingle').classList.toggle('active', mode === 'single');
+      document.getElementById('btnViewSplit').classList.toggle('active', mode === 'split');
+
+      document.getElementById('pacsSingleViewport').style.display = mode === 'single' ? 'flex' : 'none';
+      document.getElementById('pacsSplitView').classList.toggle('active', mode === 'split');
+
+      if (mode === 'split') {
+        loadSplitPreset('testiculo_vol');
+      }
+    }
+
+    function initSplitDropdowns() {
+      const selA = document.getElementById('splitSelectA');
+      const selB = document.getElementById('splitSelectB');
+
+      FRAMES.forEach((f) => {
+        const optA = document.createElement('option');
+        optA.value = f.index;
+        optA.innerText = '#' + f.index + ' ' + f.title;
+        selA.appendChild(optA);
+
+        const optB = document.createElement('option');
+        optB.value = f.index;
+        optB.innerText = '#' + f.index + ' ' + f.title;
+        selB.appendChild(optB);
+      });
+    }
+
+    function updateSplitPane(pane, frameIndex) {
+      const f = FRAMES.find(item => item.index == frameIndex);
+      if (!f) return;
+
+      if (pane === 'A') {
+        document.getElementById('splitImgA').src = 'originais_publicos/imagens/Imagens_Exames_1/' + f.filename;
+        document.getElementById('splitInfoA').innerHTML = '<strong>' + f.title + '</strong>: ' + f.calipers;
+      } else {
+        document.getElementById('splitImgB').src = 'originais_publicos/imagens/Imagens_Exames_1/' + f.filename;
+        document.getElementById('splitInfoB').innerHTML = '<strong>' + f.title + '</strong>: ' + f.calipers;
+      }
+    }
+
+    function loadSplitPreset(preset) {
+      setPacsViewMode('split');
+      const selA = document.getElementById('splitSelectA');
+      const selB = document.getElementById('splitSelectB');
+
+      if (preset === 'testiculo_vol') {
+        // Testículo D (Frame 22: 7,0 cm³) vs Testículo E (Frame 18: 7,6 cm³)
+        selA.value = 22;
+        selB.value = 18;
+        updateSplitPane('A', 22);
+        updateSplitPane('B', 18);
+      } else if (preset === 'valsalva') {
+        // Repouso (Frame 26: 1,7 mm) vs Valsalva (Frame 27: 2,3 mm)
+        selA.value = 26;
+        selB.value = 27;
+        updateSplitPane('A', 26);
+        updateSplitPane('B', 27);
+      } else if (preset === 'rins') {
+        // Rim Direito (Frame 3) vs Rim Esquerdo (Frame 10)
+        selA.value = 3;
+        selB.value = 10;
+        updateSplitPane('A', 3);
+        updateSplitPane('B', 10);
+      }
+    }
+
+    // ==========================================
+    // TABELA HÍBRIDA & MATRIZ COMPLETA (43 EXAMES)
+    // ==========================================
+    function setLabTableMode(mode) {
+      document.getElementById('btnTabFocus').classList.toggle('active', mode === 'focus');
+      document.getElementById('btnTabAll').classList.toggle('active', mode === 'all');
+
+      document.getElementById('tableFocusWrapper').style.display = mode === 'focus' ? 'block' : 'none';
+      document.getElementById('tableFullWrapper').style.display = mode === 'all' ? 'block' : 'none';
+      document.getElementById('matrixFilterBar').style.display = mode === 'all' ? 'flex' : 'none';
+      if (mode === 'all') {
+        requestAnimationFrame(() => document.getElementById('matrixFilterBar').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      }
+    }
+
+    let activeMatrixCat = 'all';
+
+    function filterMatrixCat(cat) {
+      activeMatrixCat = cat;
+      document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+      const activePill = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.getAttribute('onclick').includes(cat));
+      if (activePill) activePill.classList.add('active');
+      filterMatrixTable();
+      requestAnimationFrame(() => {
+        const target = document.getElementById('tableFullWrapper');
+        if (target && target.style.display !== 'none') {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
+
+    function filterMatrixTable() {
+      const query = (document.getElementById('matrixSearchInput').value || '').toLowerCase();
+      renderMatrixTable(query, activeMatrixCat);
+    }
+
+    function renderMatrixTable(query = '', category = 'all') {
+      const tbody = document.getElementById('matrixTableBody');
+      tbody.innerHTML = '';
+
+      const dates = ['2023-05-08', '2023-09-28', '2023-11-28', '2024-12-06', '2025-03-18', '2025-07-22', '2026-04-07', '2026-11-09'];
+
+      const filtered = LAB_MATRIX.filter(row => {
+        const matchCat = (category === 'all') || (row.category === category);
+        const matchQuery = !query || row.name.toLowerCase().includes(query) || (row.notes && row.notes.toLowerCase().includes(query));
+        return matchCat && matchQuery;
+      });
+
+      filtered.forEach(row => {
+        const tr = document.createElement('tr');
+        
+        let cellsHtml = `<td><strong>${row.name}</strong></td><td style="color: var(--text-dim); font-size: 0.75rem;">${row.unit}</td>`;
+        
+        dates.forEach(d => {
+          const item = row.values[d] || { val: '-', status: 'none' };
+          let cls = 'val-none';
+          if (item.status === 'critical') cls = 'val-alert';
+          else if (item.status === 'high' || item.status === 'attention' || item.status === 'low') cls = 'val-warning';
+          else if (item.status === 'normal') cls = 'val-normal';
+          
+          cellsHtml += `<td class="${cls}">${item.val}</td>`;
+        });
+
+        cellsHtml += `<td style="color: var(--text-dim); font-size: 0.725rem;">${row.ref}</td>`;
+        tr.innerHTML = cellsHtml;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ==========================================
+    // GRÁFICOS INTERATIVOS (CHART.JS)
+    // ==========================================
+    function showChart(type) {
+      document.getElementById('btnChartPSA').classList.toggle('active', type === 'psa');
+      document.getElementById('btnChartHorm').classList.toggle('active', type === 'horm');
+      document.getElementById('btnChartLeuko').classList.toggle('active', type === 'leuko');
+      document.getElementById('btnChartMetab').classList.toggle('active', type === 'metab');
+
+      const ctx = document.getElementById('evolutionChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      const isLight = document.body.classList.contains('light-theme');
+      const textColor = isLight ? '#475569' : '#9ca3af';
+      const gridColor = isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)';
+
+      if (type === 'psa') {
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: PSA_SERIES.map(d => d.date),
+            datasets: [
+              {
+                label: 'PSA Total (ng/mL)',
+                data: PSA_SERIES.map(d => d.total),
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                borderWidth: 3,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                fill: true,
+                tension: 0.2
+              },
+              {
+                label: 'PSA Livre (ng/mL)',
+                data: PSA_SERIES.map(d => d.free),
+                borderColor: '#38bdf8',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 5,
+                borderDash: [5, 5]
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: textColor } },
+              tooltip: {
+                callbacks: {
+                  footer: function(items) {
+                    const idx = items[0].dataIndex;
+                    const r = PSA_SERIES[idx].ratio;
+                    return r ? ('Relação Livre/Total: ' + r + '%') : '';
+                  }
+                }
+              }
+            },
+            scales: {
+              x: { grid: { color: gridColor }, ticks: { color: textColor } },
+              y: { grid: { color: gridColor }, ticks: { color: textColor }, beginAtZero: true }
+            }
+          }
+        });
+      } else if (type === 'horm') {
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: HORM_SERIES.map(d => d.date),
+            datasets: [
+              {
+                label: 'Testosterona Total (ng/dL)',
+                data: HORM_SERIES.map(d => d.testo),
+                borderColor: '#c084fc',
+                backgroundColor: 'rgba(192, 132, 252, 0.1)',
+                borderWidth: 3,
+                pointRadius: 6,
+                yAxisID: 'y'
+              },
+              {
+                label: 'LH (mUI/mL)',
+                data: HORM_SERIES.map(d => d.lh),
+                borderColor: '#34d399',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 5,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+              x: { grid: { color: gridColor }, ticks: { color: textColor } },
+              y: { type: 'linear', position: 'left', grid: { color: gridColor }, ticks: { color: textColor }, title: { display: true, text: 'Testosterona (ng/dL)', color: textColor } },
+              y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#34d399' }, title: { display: true, text: 'LH (mUI/mL)', color: '#34d399' } }
+            }
+          }
+        });
+      } else if (type === 'leuko') {
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: LEUKO_SERIES.map(d => d.date),
+            datasets: [
+              {
+                label: 'Leucócitos Totais (/µL)',
+                data: LEUKO_SERIES.map(d => d.leuko),
+                backgroundColor: 'rgba(56, 189, 248, 0.5)',
+                borderColor: '#38bdf8',
+                borderWidth: 1
+              },
+              {
+                label: 'Linfócitos Absolutos (/µL)',
+                data: LEUKO_SERIES.map(d => d.lympho),
+                backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                borderColor: '#f59e0b',
+                borderWidth: 1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+              x: { grid: { color: gridColor }, ticks: { color: textColor } },
+              y: { grid: { color: gridColor }, ticks: { color: textColor }, beginAtZero: true }
+            }
+          }
+        });
+      } else if (type === 'metab') {
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: METAB_SERIES.map(d => d.date),
+            datasets: [
+              {
+                label: 'Glicemia de Jejum (mg/dL)',
+                data: METAB_SERIES.map(d => d.glucose),
+                borderColor: '#38bdf8',
+                borderWidth: 2,
+                pointRadius: 5
+              },
+              {
+                label: 'Creatinina Sérica (mg/dL * 100)',
+                data: METAB_SERIES.map(d => d.creatinine ? d.creatinine * 100 : null),
+                borderColor: '#10b981',
+                borderWidth: 2,
+                pointRadius: 5
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+              x: { grid: { color: gridColor }, ticks: { color: textColor } },
+              y: { grid: { color: gridColor }, ticks: { color: textColor } }
+            }
+          }
+        });
+      }
+    }
+  </script>
+
+</body>
+</html>
+
+
