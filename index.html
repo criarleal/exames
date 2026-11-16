@@ -925,6 +925,7 @@
       align-items: center;
       margin-bottom: 1rem;
       flex-wrap: wrap;
+      scroll-margin-top: 90px;
     }
 
     .search-input {
@@ -2307,9 +2308,9 @@ Prontuário: removido | Última Coleta: 09/11/2026
       if (activePill) activePill.classList.add('active');
       filterMatrixTable();
       requestAnimationFrame(() => {
-        const target = document.getElementById('tableFullWrapper');
-        if (target && target.style.display !== 'none') {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const filterBar = document.getElementById('matrixFilterBar');
+        if (filterBar && filterBar.style.display !== 'none') {
+          filterBar.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
     }
