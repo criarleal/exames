@@ -1130,6 +1130,13 @@
       .pacs-stage img { max-width: 100%; max-height: 100%; }
       .risk-legend { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; font-size: .65rem; }
 
+      /* Cabeçalhos com muitos controles não podem comprimir nem cortar botões. */
+      .card-title > div:first-child { flex-wrap: wrap !important; gap: .55rem !important; }
+      .card-title > div:first-child > div { flex: 1 1 100%; min-width: 0; max-width: 100%; overflow-x: auto; padding-bottom: .15rem; }
+      .card-title > div:first-child > div .pacs-tool-btn { flex: 0 0 auto; white-space: nowrap; }
+      .card-title > div:last-child { max-width: 100%; overflow-x: auto; padding-bottom: .15rem; }
+      .card-title > div:last-child .pacs-tool-btn { flex: 0 0 auto; white-space: nowrap; }
+
       /* No celular, cada exame vira um cartão legível em vez de uma tabela lateral. */
       .table-container.mobile-cards { overflow: visible; border: 0; box-shadow: none; background: transparent; }
       .mobile-cards table { min-width: 0; width: 100%; border-collapse: separate; border-spacing: 0 .55rem; }
